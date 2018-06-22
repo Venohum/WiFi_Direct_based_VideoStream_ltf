@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Wi-Fi_Direct_based_VideoStream_ltf</string>
+    <string name="p2p_off_warning">Enable P2P from action bar button above or system settings</string>
+</resources>
