@@ -133,12 +133,9 @@ public class DeviceListFragment extends ListFragment implements PeerListListener
                     bottom.setText(getDeviceStatus(device.status));
                 }
             }
-
             return v;
-
         }
     }
-
     /**
      * Update UI for this device.
      * 
@@ -193,15 +190,15 @@ public class DeviceListFragment extends ListFragment implements PeerListListener
      * An interface-callback for the activity to listen to fragment interaction
      * events.
      */
-    public interface DeviceActionListener {
-
-        void showDetails(WifiP2pDevice device);
-
-        void cancelDisconnect();
-
-        void connect(WifiP2pConfig config);
-
-        void disconnect();
-    }
+//    public interface DeviceActionListener {
+//
+//        void showDetails(WifiP2pDevice device);
+//
+//        void cancelDisconnect();
+//
+//        void connect(WifiP2pConfig config);
+//
+//        void disconnect();
+//    }
 
 }

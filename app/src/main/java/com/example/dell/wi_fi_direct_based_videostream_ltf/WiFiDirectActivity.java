@@ -18,8 +18,12 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * An activity that uses WiFi Direct APIs to discover and connect with available
@@ -28,12 +32,13 @@ import android.widget.Toast;
  * The application should also register a BroadcastReceiver for notification of
  * WiFi state related events.
  */
-public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pManager.ChannelListener,DeviceListFragment.DeviceActionListener{
+public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pManager.ChannelListener,DeviceActionListener{
 
     public static final String TAG = "WiFiDirectVideoStream";
     private WifiP2pManager manager;
     private boolean isWifiP2pEnabled = false;
     private boolean retryChannel = false;
+    private boolean isConnected = false;
 
     private final IntentFilter intentFilter = new IntentFilter();
     private WifiP2pManager.Channel channel;
@@ -44,6 +49,9 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
      */
     public void setIsWifiP2pEnabled(boolean isWifiP2pEnabled) {
         this.isWifiP2pEnabled = isWifiP2pEnabled;
+    }
+    public boolean getIsConnected() {
+        return isConnected;
     }
 
     @Override
@@ -60,7 +68,17 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
 
         manager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
         channel = manager.initialize(this, getMainLooper(), null);
-        Looper looper=getMainLooper();
+
+
+        Button creategroup=(Button)findViewById(R.id.create_group);
+        creategroup.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                createGroup();
+            }
+        });
+
+
     }
 
     /** register the BroadcastReceiver with the intent values to be matched */
@@ -151,7 +169,22 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
     }
 
     @Override
-    public void showDetails(WifiP2pDevice device) {
+    public void onChannelDisconnected() {
+        // we will try once more
+        if (manager != null && !retryChannel) {
+            Toast.makeText(this, "Channel lost. Trying again", Toast.LENGTH_LONG).show();
+            resetData();
+            retryChannel = true;
+            manager.initialize(this, getMainLooper(), this);
+        } else {
+            Toast.makeText(this,
+                    "Severe! Channel is probably lost premanently. Try Disable/Re-Enable P2P.",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
+    public void showDetails(WifiP2pDevice device) {//这是DeviceActionListener接口中的一个方法
         DeviceDetailFragment fragment = (DeviceDetailFragment) getFragmentManager()
                 .findFragmentById(R.id.frag_detail);
         fragment.showDetails(device);
@@ -159,7 +192,7 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
     }
 
     @Override
-    public void connect(WifiP2pConfig config) {
+    public void connect(WifiP2pConfig config) {//这是DeviceActionListener接口中的一个方法
         manager.connect(channel, config, new WifiP2pManager.ActionListener() {
 
             @Override
@@ -177,7 +210,7 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
     }
 
     @Override
-    public void disconnect() {
+    public void disconnect() {//这是DeviceActionListener接口中的一个方法
         final DeviceDetailFragment fragment = (DeviceDetailFragment) getFragmentManager()
                 .findFragmentById(R.id.frag_detail);
         fragment.resetViews();
@@ -190,29 +223,39 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
             }
             @Override
             public void onSuccess() {
-                fragment.getView().setVisibility(View.GONE);
+                fragment.getView().setVisibility(View.GONE);//让碎片消失
             }
 
         });
     }
-
     @Override
-    public void onChannelDisconnected() {
-        // we will try once more
-        if (manager != null && !retryChannel) {
-            Toast.makeText(this, "Channel lost. Trying again", Toast.LENGTH_LONG).show();
-            resetData();
-            retryChannel = true;
-            manager.initialize(this, getMainLooper(), this);
-        } else {
-            Toast.makeText(this,
-                    "Severe! Channel is probably lost premanently. Try Disable/Re-Enable P2P.",
-                    Toast.LENGTH_LONG).show();
-        }
+    public void createGroup(){//这是DeviceActionListener接口中的一个方法
+        manager.createGroup(channel, new WifiP2pManager.ActionListener() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(WiFiDirectActivity.this, "Create group successfully!", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onFailure(int reason) {
+
+                if(!getIsConnected()){
+                    Toast.makeText(WiFiDirectActivity.this, "Failed to create group!"+reason, Toast.LENGTH_SHORT).show();
+                    Timer timer = new Timer();
+                    timer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            createGroup();
+                        }
+                    }, 3000);
+                }
+            }
+        });
+
     }
 
     @Override
-    public void cancelDisconnect() {
+    public void cancelDisconnect() {//这是DeviceActionListener接口中的一个方法
 
         /*
          * A cancel abort request by user. Disconnect i.e. removeGroup if
@@ -247,4 +290,5 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
         }
 
     }
+
 }

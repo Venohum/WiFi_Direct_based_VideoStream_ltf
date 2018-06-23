@@ -15,7 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-public class DeviceDetailFragment extends Fragment {
+public class DeviceDetailFragment extends Fragment implements WifiP2pManager.ConnectionInfoListener {
     protected static final int CHOOSE_FILE_RESULT_CODE = 20;
     private View mContentView = null;
     private WifiP2pDevice device;
@@ -35,21 +35,23 @@ public class DeviceDetailFragment extends Fragment {
             public void onClick(View v) {
                 WifiP2pConfig config = new WifiP2pConfig();
                 config.deviceAddress = device.deviceAddress;
-                config.wps.setup = WpsInfo.PBC;
+               config.wps.setup = WpsInfo.PBC;//这到底是什么？
+                /*WpsInfo是一个代表WiFi保护设置的类，而wps是WiFiP2pConfig的一个字段，字段类型就是WpsInfo，
+                所以wps还可以继续调用WpsInfo中的方法steup，但是这个方法在API level 28中已经被弃用了。*/
                 if (progressDialog != null && progressDialog.isShowing()) {
                     progressDialog.dismiss();
                 }
                 progressDialog = ProgressDialog.show(getActivity(), "Press back to cancel",
-                        "Connecting to :" + device.deviceAddress, true, true,
-                        new DialogInterface.OnCancelListener() {
+                        "Connecting to :" + device.deviceAddress, true, true
 
+                        ,new DialogInterface.OnCancelListener() {
                             @Override
                             public void onCancel(DialogInterface dialog) {
-                                ((DeviceListFragment.DeviceActionListener) getActivity()).cancelDisconnect();
+                                ((DeviceActionListener) getActivity()).cancelDisconnect();
                             }
                         }
                 );
-                ((DeviceListFragment.DeviceActionListener) getActivity()).connect(config);
+                ((DeviceActionListener) getActivity()).connect(config);
 //                if (progressDialog != null && progressDialog.isShowing()) {
 //                    progressDialog.dismiss();
 //                }
@@ -59,16 +61,14 @@ public class DeviceDetailFragment extends Fragment {
 
         mContentView.findViewById(R.id.btn_disconnect).setOnClickListener(
                 new View.OnClickListener() {
-
                     @Override
                     public void onClick(View v) {
-                        ((DeviceListFragment.DeviceActionListener) getActivity()).disconnect();
+                        ((DeviceActionListener) getActivity()).disconnect();
                     }
                 });
 
         mContentView.findViewById(R.id.btn_start_client).setOnClickListener(
                 new View.OnClickListener() {
-
                     @Override
                     public void onClick(View v) {
                         // Allow user to pick an image from Gallery or other
@@ -86,9 +86,10 @@ public class DeviceDetailFragment extends Fragment {
         this.device = device;
         this.getView().setVisibility(View.VISIBLE);
         TextView view = (TextView) mContentView.findViewById(R.id.device_address);
-       view.setText(device.deviceAddress);
+       view.setText("DeviceMacAddress:"+device.deviceAddress);
         view = (TextView) mContentView.findViewById(R.id.device_info);
         view.setText(device.toString());
+
 
     }
     /**
@@ -108,4 +109,11 @@ public class DeviceDetailFragment extends Fragment {
         this.getView().setVisibility(View.GONE);
     }
 
+     public void onConnectionInfoAvailable(final WifiP2pInfo info){
+         if (progressDialog != null && progressDialog.isShowing()) {
+             progressDialog.dismiss();
+         }
+         this.info = info;
+         this.getView().setVisibility(View.VISIBLE);
+     }
 }
