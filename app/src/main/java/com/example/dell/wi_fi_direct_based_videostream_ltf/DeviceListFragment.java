@@ -40,7 +40,7 @@ import java.util.List;
  * A ListFragment that displays available peers on discovery and requests the
  * parent activity to handle user interaction events
  */
-public class DeviceListFragment extends ListFragment implements PeerListListener {
+public class DeviceListFragment extends ListFragment implements PeerListListener{
 
     private List<WifiP2pDevice> peers = new ArrayList<WifiP2pDevice>();
     ProgressDialog progressDialog = null;
@@ -153,10 +153,10 @@ public class DeviceListFragment extends ListFragment implements PeerListListener
     }
 
     @Override
-    public void onPeersAvailable(WifiP2pDeviceList peerList) {
-//        if (progressDialog != null && progressDialog.isShowing()) {
-//            progressDialog.dismiss();
-//        }
+    public void onPeersAvailable(WifiP2pDeviceList peerList) {//PeerListListener接口中定义的方法
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
+        }
         peers.clear();
         peers.addAll(peerList.getDeviceList());
         ((WiFiPeerListAdapter) getListAdapter()).notifyDataSetChanged();

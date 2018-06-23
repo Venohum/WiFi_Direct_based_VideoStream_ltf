@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
+import android.os.Looper;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -27,9 +28,9 @@ import android.widget.Toast;
  * The application should also register a BroadcastReceiver for notification of
  * WiFi state related events.
  */
-public class WiFiDirectActivity extends Activity implements WifiP2pManager.ChannelListener{
+public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pManager.ChannelListener,DeviceListFragment.DeviceActionListener{
 
-    public static final String TAG = "wifidirectdemo";
+    public static final String TAG = "WiFiDirectVideoStream";
     private WifiP2pManager manager;
     private boolean isWifiP2pEnabled = false;
     private boolean retryChannel = false;
@@ -48,18 +49,18 @@ public class WiFiDirectActivity extends Activity implements WifiP2pManager.Chann
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Toast.makeText(WiFiDirectActivity.this,"这是咋了",Toast.LENGTH_SHORT).show();
-//        setContentView(R.layout.activity_wi_fi_direct);
-        System.out.print("jdjhdfjdfjdjjdjdjdjdj");
+//        Toast.makeText(WiFiDirectActivity.this,"这是咋了",Toast.LENGTH_SHORT).show();
+        setContentView(R.layout.activity_wi_fi_direct);
 //        // add necessary intent values to be matched.
 //
-//        intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
-//        intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
-//        intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
-//        intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
-//
-//        manager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
-//        channel = manager.initialize(this, getMainLooper(), null);
+        intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);//通知P2P功能的使用情况
+        intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);//系统内部保存搜索到其他P2P设备信息的变化情况
+        intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);//用于通知P2P的连接情况
+        intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);//用于通知本机设备信息变化情况
+
+        manager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
+        channel = manager.initialize(this, getMainLooper(), null);
+        Looper looper=getMainLooper();
     }
 
     /** register the BroadcastReceiver with the intent values to be matched */
@@ -86,10 +87,10 @@ public class WiFiDirectActivity extends Activity implements WifiP2pManager.Chann
         DeviceDetailFragment fragmentDetails = (DeviceDetailFragment) getFragmentManager()
                 .findFragmentById(R.id.frag_detail);
         if (fragmentList != null) {
-//            fragmentList.clearPeers();
+           fragmentList.clearPeers();
         }
         if (fragmentDetails != null) {
-//            fragmentDetails.resetViews();
+           fragmentDetails.resetViews();
         }
     }
 
@@ -149,51 +150,51 @@ public class WiFiDirectActivity extends Activity implements WifiP2pManager.Chann
         }
     }
 
-//    @Override
-//    public void showDetails(WifiP2pDevice device) {
-//        DeviceDetailFragment fragment = (DeviceDetailFragment) getFragmentManager()
-//                .findFragmentById(R.id.frag_detail);
-//        fragment.showDetails(device);
-//
-//    }
+    @Override
+    public void showDetails(WifiP2pDevice device) {
+        DeviceDetailFragment fragment = (DeviceDetailFragment) getFragmentManager()
+                .findFragmentById(R.id.frag_detail);
+        fragment.showDetails(device);
 
-//    @Override
-//    public void connect(WifiP2pConfig config) {
-//        manager.connect(channel, config, new WifiP2pManager.ActionListener() {
-//
-//            @Override
-//            public void onSuccess() {
-//                // WiFiDirectBroadcastReceiver will notify us. Ignore for now.
-//            }
-//
-//            @Override
-//            public void onFailure(int reason) {
-//                Toast.makeText(WiFiDirectActivity.this, "Connect failed. Retry.",
-//                        Toast.LENGTH_SHORT).show();
-//            }
-//        });
-//    }
+    }
 
-//    @Override
-//    public void disconnect() {
-//        final DeviceDetailFragment fragment = (DeviceDetailFragment) getFragmentManager()
-//                .findFragmentById(R.id.frag_detail);
-//        fragment.resetViews();
-//        manager.removeGroup(channel, new WifiP2pManager.ActionListener() {
-//
-//            @Override
-//            public void onFailure(int reasonCode) {
-//                Log.d(TAG, "Disconnect failed. Reason :" + reasonCode);
-//
-//            }
-//
-//            @Override
-//            public void onSuccess() {
-//                fragment.getView().setVisibility(View.GONE);
-//            }
-//
-//        });
-//    }
+    @Override
+    public void connect(WifiP2pConfig config) {
+        manager.connect(channel, config, new WifiP2pManager.ActionListener() {
+
+            @Override
+            public void onSuccess() {
+                // WiFiDirectBroadcastReceiver will notify us. Ignore for now.
+                Toast.makeText(WiFiDirectActivity.this,"Connect success!",Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onFailure(int reason) {
+                Toast.makeText(WiFiDirectActivity.this, "Connect failed. Retry.",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @Override
+    public void disconnect() {
+        final DeviceDetailFragment fragment = (DeviceDetailFragment) getFragmentManager()
+                .findFragmentById(R.id.frag_detail);
+        fragment.resetViews();
+        manager.removeGroup(channel, new WifiP2pManager.ActionListener() {
+
+            @Override
+            public void onFailure(int reasonCode) {
+                Log.d(TAG, "Disconnect failed. Reason :" + reasonCode);
+
+            }
+            @Override
+            public void onSuccess() {
+                fragment.getView().setVisibility(View.GONE);
+            }
+
+        });
+    }
 
     @Override
     public void onChannelDisconnected() {
@@ -210,40 +211,40 @@ public class WiFiDirectActivity extends Activity implements WifiP2pManager.Chann
         }
     }
 
-//    @Override
-//    public void cancelDisconnect() {
-//
-//        /*
-//         * A cancel abort request by user. Disconnect i.e. removeGroup if
-//         * already connected. Else, request WifiP2pManager to abort the ongoing
-//         * request
-//         */
-//        if (manager != null) {
-//            final DeviceListFragment fragment = (DeviceListFragment) getFragmentManager()
-//                    .findFragmentById(R.id.frag_list);
-//            if (fragment.getDevice() == null
-//                    || fragment.getDevice().status == WifiP2pDevice.CONNECTED) {
-////                disconnect();
-//            } else if (fragment.getDevice().status == WifiP2pDevice.AVAILABLE
-//                    || fragment.getDevice().status == WifiP2pDevice.INVITED) {
-//
-//                manager.cancelConnect(channel, new WifiP2pManager.ActionListener() {
-//
-//                    @Override
-//                    public void onSuccess() {
-//                        Toast.makeText(WiFiDirectActivity.this, "Aborting connection",
-//                                Toast.LENGTH_SHORT).show();
-//                    }
-//
-//                    @Override
-//                    public void onFailure(int reasonCode) {
-//                        Toast.makeText(WiFiDirectActivity.this,
-//                                "Connect abort request failed. Reason Code: " + reasonCode,
-//                                Toast.LENGTH_SHORT).show();
-//                    }
-//                });
-//            }
-//        }
-//
-//    }
+    @Override
+    public void cancelDisconnect() {
+
+        /*
+         * A cancel abort request by user. Disconnect i.e. removeGroup if
+         * already connected. Else, request WifiP2pManager to abort the ongoing
+         * request
+         */
+        if (manager != null) {
+            final DeviceListFragment fragment = (DeviceListFragment) getFragmentManager()
+                    .findFragmentById(R.id.frag_list);
+            if (fragment.getDevice() == null
+                    || fragment.getDevice().status == WifiP2pDevice.CONNECTED) {
+                disconnect();
+            } else if (fragment.getDevice().status == WifiP2pDevice.AVAILABLE
+                    || fragment.getDevice().status == WifiP2pDevice.INVITED) {
+
+                manager.cancelConnect(channel, new WifiP2pManager.ActionListener() {
+
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(WiFiDirectActivity.this, "Aborting connection",
+                                Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onFailure(int reasonCode) {
+                        Toast.makeText(WiFiDirectActivity.this,
+                                "Connect abort request failed. Reason Code: " + reasonCode,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }
+
+    }
 }
