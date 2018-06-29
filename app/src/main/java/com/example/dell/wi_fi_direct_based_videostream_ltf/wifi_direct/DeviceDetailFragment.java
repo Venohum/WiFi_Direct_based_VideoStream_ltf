@@ -1,4 +1,4 @@
-package com.example.dell.wi_fi_direct_based_videostream_ltf;
+package com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct;
 
 import android.app.Fragment;
 import android.app.ProgressDialog;
@@ -14,6 +14,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
+import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.chat.ChatActivity;
 
 public class DeviceDetailFragment extends Fragment implements WifiP2pManager.ConnectionInfoListener {
     protected static final int CHOOSE_FILE_RESULT_CODE = 20;
@@ -73,9 +76,11 @@ public class DeviceDetailFragment extends Fragment implements WifiP2pManager.Con
                     public void onClick(View v) {
                         // Allow user to pick an image from Gallery or other
                         // registered apps
-                        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                        intent.setType("image/*");
-                        startActivityForResult(intent, CHOOSE_FILE_RESULT_CODE);
+//                        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+//                        intent.setType("image/*");
+//                        startActivityForResult(intent, CHOOSE_FILE_RESULT_CODE);
+                        Intent intent=new Intent(getActivity(),ChatActivity.class);
+                        startActivity(intent);
                     }
                 });
 
@@ -105,8 +110,8 @@ public class DeviceDetailFragment extends Fragment implements WifiP2pManager.Con
         view.setText(R.string.empty);
         view = (TextView) mContentView.findViewById(R.id.status_text);
         view.setText(R.string.empty);
-        mContentView.findViewById(R.id.btn_start_client).setVisibility(View.GONE);
-        this.getView().setVisibility(View.GONE);
+//        mContentView.findViewById(R.id.btn_start_client).setVisibility(View.GONE);
+//        this.getView().setVisibility(View.GONE);
     }
 
      public void onConnectionInfoAvailable(final WifiP2pInfo info){

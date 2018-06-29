@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.example.dell.wi_fi_direct_based_videostream_ltf;
+package com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct;
 
 import android.app.ListFragment;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
@@ -32,6 +31,9 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,14 +53,15 @@ public class DeviceListFragment extends ListFragment implements PeerListListener
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         this.setListAdapter(new WiFiPeerListAdapter(getActivity(), R.layout.row_devices, peers));
-
+//getActivity()是
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         mContentView = inflater.inflate(R.layout.device_list, null);
         return mContentView;
-    }
+
+        }
 
     /**
      * @return this device
@@ -98,7 +101,7 @@ public class DeviceListFragment extends ListFragment implements PeerListListener
     /**
      * Array adapter for ListFragment that maintains WifiP2pDevice list.
      */
-    private class WiFiPeerListAdapter extends ArrayAdapter<WifiP2pDevice> {
+    private class WiFiPeerListAdapter extends ArrayAdapter<WifiP2pDevice> {//内部类？
 
         private List<WifiP2pDevice> items;
 
@@ -115,7 +118,7 @@ public class DeviceListFragment extends ListFragment implements PeerListListener
         }
 
         @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
+        public View getView(int position, View convertView, ViewGroup parent) {//当每个子项被滚到屏幕中间的时候调用
             View v = convertView;
             if (v == null) {
                 LayoutInflater vi = (LayoutInflater) getActivity().getSystemService(

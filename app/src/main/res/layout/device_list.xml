@@ -63,6 +63,7 @@
             android:layout_height="wrap_content"
             android:id="@+id/remove_group"
             android:text="RemoveGroup"/>
+
     </LinearLayout>
 
     <TextView
@@ -92,4 +93,5 @@
         android:layout_gravity="center"
         android:layout_height="match_parent"
         android:text="Message" />
+
 </LinearLayout>

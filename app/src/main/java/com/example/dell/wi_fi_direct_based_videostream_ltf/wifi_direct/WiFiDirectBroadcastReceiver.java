@@ -1,4 +1,4 @@
-package com.example.dell.wi_fi_direct_based_videostream_ltf;
+package com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -8,6 +8,8 @@ import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
 
 public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
     private WifiP2pManager manager;
@@ -47,7 +49,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
             }
             Log.d(WiFiDirectActivity.TAG, "P2P state changed - " + state);
         } else if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action)) {
-//            Toast.makeText(WiFiDirectActivity,"WiFi_P2P_PEERS_CHANGED_ACTION",Toast.LENGTH_SHORT).show();
+            Toast.makeText(activity,"WiFi_P2P_PEERS_CHANGED_ACTION",Toast.LENGTH_SHORT).show();
             Log.d(WiFiDirectActivity.TAG, "WiFi_P2P_PEERS_CHANGED_ACTION");
             // request available peers from the wifi p2p manager. This is an
             // asynchronous call and the calling activity is notified with a
@@ -61,7 +63,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
             if (manager == null) {
                 return;
             }
-
+            Toast.makeText(activity,"P2P_connection_changed_action",Toast.LENGTH_SHORT).show();
             NetworkInfo networkInfo = (NetworkInfo) intent
                     .getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
 
@@ -83,6 +85,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
             fragment.updateThisDevice((WifiP2pDevice) intent.getParcelableExtra(
                     WifiP2pManager.EXTRA_WIFI_P2P_DEVICE));
             Log.d(WiFiDirectActivity.TAG, "WIFI_P2P_THIS_DEVICE_CHANGED_ACTION+last");
+            Toast.makeText(activity,"Device_changed_action",Toast.LENGTH_SHORT).show();
         }
     }
 }

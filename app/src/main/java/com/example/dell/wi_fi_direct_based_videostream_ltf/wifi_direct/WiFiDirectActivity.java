@@ -1,26 +1,22 @@
-package com.example.dell.wi_fi_direct_based_videostream_ltf;
+package com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct;
 
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
-import android.os.Looper;
-import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.app.WindowDecorActionBar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
+
+import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -71,6 +67,7 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
 
 
         Button creategroup=(Button)findViewById(R.id.create_group);
+
         creategroup.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -278,7 +275,6 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
                         Toast.makeText(WiFiDirectActivity.this, "Aborting connection",
                                 Toast.LENGTH_SHORT).show();
                     }
-
                     @Override
                     public void onFailure(int reasonCode) {
                         Toast.makeText(WiFiDirectActivity.this,
