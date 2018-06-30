@@ -1,21 +1,22 @@
 package com.example.dell.wi_fi_direct_based_videostream_ltf.chat;
 
+import android.os.Message;
 import android.util.Log;
-
+import android.os.Handler;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.logging.Handler;
+
 
 public class ServerThread implements Runnable {
     private Socket socket;
     private String type;
     private static ServerSocket serverSocket;
     private Handler myhandler;
-    public ServerThread(String type){
-//    this.myhandler=handler;
+    public ServerThread(String type,Handler handler){
+    this.myhandler=handler;
     this.type=type;
     }
     @Override
@@ -52,8 +53,15 @@ public class ServerThread implements Runnable {
                     DataInputStream inputStream=new DataInputStream(socket.getInputStream());
                     Log.d(ChatActivity.TAG,"开始读");
                     String message =inputStream.readUTF();
-                    Log.d(ChatActivity.TAG,"客户端"+socket.getInetAddress().getHostName()+"说:"+ message);
-
+                    if (message==null){
+                        Log.d(ChatActivity.TAG, "message 是空的！ ");
+                    }
+                    Log.d(ChatActivity.TAG, message);
+                    //Log.d(ChatActivity.TAG,"客户端"+socket.getInetAddress().getHostName()+"说:"+ message);
+                    Message message1=Message.obtain();
+                    message1.what=1;
+                    message1.obj="客户端"+socket.getInetAddress().getHostName()+"说:"+ message;
+                    myhandler.sendMessage(message1);
                 }
             }catch (IOException e){
                 e.printStackTrace();
@@ -69,6 +77,15 @@ public class ServerThread implements Runnable {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+    class ServerWrite implements Runnable{
+
+
+        @Override
+        public void run(){
+
+
         }
     }
 }

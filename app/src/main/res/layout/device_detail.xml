@@ -33,8 +33,7 @@
                 android:id="@+id/btn_start_client"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="get_file_button"
-                 />
+                android:text="chat_button" />
         </LinearLayout>
 
         <TextView

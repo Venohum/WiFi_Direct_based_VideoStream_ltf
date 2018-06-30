@@ -73,8 +73,6 @@ public ClientThread(String type,Handler handler){
                         System.out.println(message);
                     } catch (Exception e) {
                         e.printStackTrace();
-                    }finally {
-                        Log.d(ChatActivity.TAG, "子线程通信异常！ ");
                     }
                 }
                 try {
@@ -90,11 +88,11 @@ public ClientThread(String type,Handler handler){
                 }
             }
         };
-        if (myhandler==null){
-            Log.d(TAG, "111111111111111111111111111失败 ");
-        }else {
-            Log.d(TAG, "111111111111111111111111111不空 ");
-        }
+//        if (myhandler==null){
+//            Log.d(TAG, "111111111111111111111111111失败 ");
+//        }else {
+//            Log.d(TAG, "111111111111111111111111111不空 ");
+//        }
         Looper.loop();
     }
     }
