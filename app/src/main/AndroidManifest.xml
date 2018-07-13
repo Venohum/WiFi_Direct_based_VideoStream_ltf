@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
     <uses-feature
         android:name="android.hardware.wifi.direct"
@@ -33,6 +34,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".chat.ChatActivity"></activity>
+        <service android:name="com.example.dell.wi_fi_direct_based_videostream_ltf.recorder.RecordService"/>
     </application>
 
 </manifest>

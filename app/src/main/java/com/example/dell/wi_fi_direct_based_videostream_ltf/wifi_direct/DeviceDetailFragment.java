@@ -10,6 +10,7 @@ import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,7 +30,7 @@ public class DeviceDetailFragment extends Fragment implements WifiP2pManager.Con
         super.onActivityCreated(savedInstanceState);
     }
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(final LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
         mContentView = inflater.inflate(R.layout.device_detail, null);
         mContentView.findViewById(R.id.btn_connect).setOnClickListener(new View.OnClickListener() {
@@ -80,6 +81,9 @@ public class DeviceDetailFragment extends Fragment implements WifiP2pManager.Con
 //                        intent.setType("image/*");
 //                        startActivityForResult(intent, CHOOSE_FILE_RESULT_CODE);
                         Intent intent=new Intent(getActivity(),ChatActivity.class);
+                        boolean data=info.isGroupOwner;
+                        Log.d("ChatAcyivity", "是组主么66666666"+data);
+                        intent.putExtra("ChatActivity",data);
                         startActivity(intent);
                     }
                 });

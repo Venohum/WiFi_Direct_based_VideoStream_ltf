@@ -20,7 +20,6 @@ public class ServerAsyncTask extends AsyncTask<Integer,String,Void>{
     public ServerAsyncTask(TextView textView){
         this.textView=textView;
     }
-
     @Override
     protected Void doInBackground(Integer... integers){
     try{
@@ -28,6 +27,7 @@ public class ServerAsyncTask extends AsyncTask<Integer,String,Void>{
             msgFromClient="";
             ServerSocket serverSocket=new ServerSocket(50000);
             Socket client=serverSocket.accept();
+            if(client!=null){Log.d(TAG,"接收到了新的客户端");}
             BufferedReader bufferedReader=new BufferedReader(new InputStreamReader(client.getInputStream()));
             String line;
             while((line=bufferedReader.readLine())!=null){
@@ -38,7 +38,7 @@ public class ServerAsyncTask extends AsyncTask<Integer,String,Void>{
         }
     }catch (Exception e){
         e.printStackTrace();
-        Log.d(TAG,"连接不上");}
+        Log.d(TAG,"出现异常！！连接不上");}
 
    return null; }
 
