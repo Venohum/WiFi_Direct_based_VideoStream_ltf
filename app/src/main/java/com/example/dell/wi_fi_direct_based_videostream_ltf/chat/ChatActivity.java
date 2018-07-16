@@ -24,6 +24,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -33,7 +34,6 @@ import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Service.ServerAsyncTask;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Service.ClientAsynTask;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.recorder.RecordService;
-import com.example.dell.wi_fi_direct_based_videostream_ltf.recorder.ScreenRecordActivity;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct.DeviceDetailFragment;
 
 public class ChatActivity extends AppCompatActivity {
@@ -73,7 +73,7 @@ public class ChatActivity extends AppCompatActivity {
 //        wifiP2pInfo=new WifiP2pInfo();
 //        if (wifiP2pInfo!=null){
 //        Log.d(TAG, "哈哈哈哈哈,P2p地址是kong "+wifiP2pInfo.toString() );}
-
+        final SurfaceView surfaceView =(findViewById(R.id.surfaceView));
         Intent intent1=getIntent();
         isgroupowner=intent1.getBooleanExtra("ChatActivity",true);
         wifiP2pManager=(WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
@@ -121,6 +121,7 @@ public class ChatActivity extends AppCompatActivity {
                 } else {
                     Intent captureIntent = projectionManager.createScreenCaptureIntent();
                     startActivityForResult(captureIntent, RECORD_REQUEST_CODE);
+
                 }
             }
         });
