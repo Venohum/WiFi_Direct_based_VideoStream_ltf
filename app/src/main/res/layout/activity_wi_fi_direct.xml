@@ -15,7 +15,7 @@
             class="com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct.DeviceListFragment"
             android:layout_width="match_parent"
             android:layout_height="200dp">
-            <!-- Preview: layout=@layout/row_devices -->
+             <!--Preview: layout=@layout/row_devices -->
         </fragment>
         <fragment
             class="com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct.DeviceDetailFragment"

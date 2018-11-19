@@ -16,6 +16,8 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.widget.Toast;
 
+import com.googlecode.javacv.FFmpegFrameRecorder;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -31,8 +33,6 @@ public class RecordService extends Service {
   private int width = 720;
   private int height = 1080;
   private int dpi;
-
-
   @Override
   public IBinder onBind(Intent intent) {
     return new RecordBinder();
@@ -51,6 +51,7 @@ public class RecordService extends Service {
     serviceThread.start();
     running = false;
     mediaRecorder = new MediaRecorder();
+
   }
 
   @Override
@@ -75,6 +76,7 @@ public class RecordService extends Service {
   public boolean startRecord() {
     if (mediaProjection == null || running) {
       return false;
+
     }
 
     initRecorder();
@@ -104,6 +106,9 @@ public class RecordService extends Service {
         DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, mediaRecorder.getSurface(), null, null);
   }
 
+  /**
+   * 初始化函数
+   */
   private void initRecorder() {
     mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
     mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
@@ -112,19 +117,19 @@ public class RecordService extends Service {
     mediaRecorder.setVideoSize(width, height);
     mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
     mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-    mediaRecorder.setVideoEncodingBitRate(5 * 1024 * 1024);
-    mediaRecorder.setVideoFrameRate(30);
+    mediaRecorder.setVideoEncodingBitRate(5*1024*1024);//关乎视频的清晰度，可设计动态码率调节算法
+    mediaRecorder.setVideoFrameRate(4);//人的肉眼所能观看到的极限
 
     try {
       mediaRecorder.prepare();
     } catch (IOException e) {
       e.printStackTrace();
+
     }
   }
   @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
   public void initmyRecoder(){
     mediaCodec.signalEndOfInputStream();
-
   }
 
   public String getsaveDirectory() {
@@ -137,9 +142,7 @@ public class RecordService extends Service {
           return null;
         }
       }
-
       Toast.makeText(getApplicationContext(), rootDir, Toast.LENGTH_SHORT).show();
-
       return rootDir;
     } else {
       return null;

@@ -80,8 +80,6 @@ public class ServerThread implements Runnable {
         }
     }
     class ServerWrite implements Runnable{
-
-
         @Override
         public void run(){
 

@@ -21,19 +21,19 @@
                 android:id="@+id/btn_connect"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="connect" />
+                android:text="@string/Connect"/>
 
             <Button
                 android:id="@+id/btn_disconnect"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="disconnect" />
+                android:text="@string/Disconnect"/>
 
             <Button
                 android:id="@+id/btn_start_client"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="chat_button" />
+                android:text="@string/Chatbutton"/>
         </LinearLayout>
 
         <TextView

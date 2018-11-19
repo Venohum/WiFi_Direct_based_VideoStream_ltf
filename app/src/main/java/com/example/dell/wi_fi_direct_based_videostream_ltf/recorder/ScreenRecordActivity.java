@@ -29,7 +29,7 @@ public class ScreenRecordActivity extends AppCompatActivity {
   private MediaProjectionManager projectionManager;
   private MediaProjection mediaProjection;
   private RecordService recordService;
-  private Button startBtn;
+  private Button startBtn;//开始录屏
 
   @TargetApi(Build.VERSION_CODES.LOLLIPOP)
   @Override
@@ -57,10 +57,11 @@ public class ScreenRecordActivity extends AppCompatActivity {
     if (ContextCompat.checkSelfPermission(ScreenRecordActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
         != PackageManager.PERMISSION_GRANTED) {
       ActivityCompat.requestPermissions(this,
-          new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_REQUEST_CODE);
+          new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_REQUEST_CODE);//声明对硬盘的写权限
     }
 
-    if (ContextCompat.checkSelfPermission(ScreenRecordActivity.this, Manifest.permission.RECORD_AUDIO)
+
+    if (ContextCompat.checkSelfPermission(ScreenRecordActivity.this, Manifest.permission.RECORD_AUDIO)//声明声音录制权限
         != PackageManager.PERMISSION_GRANTED) {
       ActivityCompat.requestPermissions(this,
           new String[] {Manifest.permission.RECORD_AUDIO}, AUDIO_REQUEST_CODE);
