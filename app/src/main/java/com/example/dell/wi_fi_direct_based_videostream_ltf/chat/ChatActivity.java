@@ -2,28 +2,25 @@ package com.example.dell.wi_fi_direct_based_videostream_ltf.chat;
 
 import android.Manifest;
 import android.annotation.TargetApi;
+import android.app.Activity;
+import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Rect;
 import android.media.AudioManager;
-import android.media.MediaCodec;
 import android.media.MediaPlayer;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.net.wifi.WifiManager;
-import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
-import android.nfc.Tag;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -37,24 +34,17 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.SeekBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Service.ServerAsyncTask;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Service.ClientAsynTask;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.recorder.RecordService;
-import com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct.DeviceDetailFragment;
 
 import java.io.File;
-import java.util.Timer;
-import java.util.TimerTask;
-
-import javax.security.auth.login.LoginException;
+import java.lang.ref.WeakReference;
 
 import static com.example.dell.wi_fi_direct_based_videostream_ltf.R.id.Sendmessage;
-import static com.example.dell.wi_fi_direct_based_videostream_ltf.R.id.btn_play;
-import static com.example.dell.wi_fi_direct_based_videostream_ltf.R.id.btn_replay;
 
 public class ChatActivity extends AppCompatActivity {
     WifiP2pInfo wifiP2pInfo;
@@ -75,6 +65,10 @@ public class ChatActivity extends AppCompatActivity {
     private Button pause;
     private Button stop;
     private Button replay;
+    private Thread thread;
+    private Looper mylooper;
+    private Handler myhandler;
+    private MyHandler UIhandler = new MyHandler(this);
     private SurfaceHolder holder;
     /*
     以下变量的定义是为了实现本地视频显示在SurfaceView中
@@ -86,18 +80,6 @@ public class ChatActivity extends AppCompatActivity {
     private EditText et_path;
     private int currentPostition = 0;
     public static final int UPDATE_UI =1;
-//    Message message;
-//    private Handler handler=new Handler(){
-//        @Override
-//        public void handleMessage(Message msg){
-//            TextView text_view=(TextView)findViewById(R.id.chat_content);
-//            switch (msg.what){
-//                case 1:
-//                    text_view.append((String)msg.obj+"\n");
-//                    break;
-//            }
-//    }
-//};
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -145,13 +127,10 @@ public class ChatActivity extends AppCompatActivity {
 
         play.setOnClickListener(click);
         pause.setOnClickListener(click);
-//        btn_replay.setOnClickListener(click);
         stop.setOnClickListener(click);
         replay.setOnClickListener(click);
         sv.getHolder().addCallback(callback);
         seekBar.setOnSeekBarChangeListener(change);
-
-
         btn_sedm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -202,7 +181,8 @@ public class ChatActivity extends AppCompatActivity {
         public void surfaceCreated(SurfaceHolder holder) {
             Log.i(TAG, "SurfaceHolder被创建！");
             if(currentPostition>0){
-               //play(currentPostition);
+                //创建SurfaceHolder的时候，如果存在上次播放的位置，则按照i上次波安防位置进行播放。
+               play(currentPostition);
                 currentPostition=0;
             }
 
@@ -223,7 +203,6 @@ public class ChatActivity extends AppCompatActivity {
 
         }
     };
-
     private SeekBar.OnSeekBarChangeListener change=new SeekBar.OnSeekBarChangeListener() {
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -231,19 +210,20 @@ public class ChatActivity extends AppCompatActivity {
 //            if (mediaPlayer.isPlaying()){
 //                mediaPlayer.seekTo(p1);
 //            }
-            Log.d(TAG, "onProgressChanged: ");
+//
+//            Log.d(TAG, "onProgressChanged: ");
         }
 
         @Override
         public void onStartTrackingTouch(SeekBar seekBar) {
             Log.d(TAG, "onStartTra");
         }
-
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
             int progress =seekBar.getProgress();
             if (mediaPlayer!=null&& mediaPlayer.isPlaying()){
                 mediaPlayer.seekTo(progress);
+                Log.d(TAG, "onStopTrackingTouch: I touched the seekbar!!!");
             }
         }
     };
@@ -269,33 +249,39 @@ public class ChatActivity extends AppCompatActivity {
                 }
         }
     };
-    private Handler UIhandle = new Handler(){
 
+    static class MyHandler extends Handler{
+        private final WeakReference<ChatActivity>mactivity;
+        MyHandler( ChatActivity activity){
+
+            mactivity=new WeakReference<ChatActivity>(activity);
+        }
         @Override
         public void handleMessage(Message msg){
+            ChatActivity activity=mactivity.get();
             super.handleMessage(msg);
-            if(msg.what==UPDATE_UI) {
-                int position = mediaPlayer.getCurrentPosition();
-                int totalduration = mediaPlayer.getDuration();
-
-                seekBar.setMax(totalduration);
-                seekBar.setProgress(position);
-
-               // updateTime(video_now_time,position);
-               // updateTime(video_total_time,totalduration);
-
-                UIhandle.sendEmptyMessageDelayed(UPDATE_UI, 500);
+            if(activity!=null){
+                switch (msg.what){
+                    case UPDATE_UI:
+//                        activity.UIhandler.sendMessageDelayed(msg,500);
+                        int position=activity.mediaPlayer.getCurrentPosition();
+                        int totalduration =activity.mediaPlayer.getDuration();
+                        activity.seekBar.setMax(totalduration);
+                        activity.seekBar.setProgress(position);
+                        Log.d(TAG, "handleMessage: 更新了呀丫丫丫丫");
+                        break;
+                }
             }
         }
-    };
-
+    }
     protected void play(final int msec){
-        String path ="/storage/emulated/0/1.mp4";
+        String path ="/storage/emulated/0/DCIM/Camera/b.mp4";
         File file =new File(path);
         if (!file.exists()){
             Toast.makeText(this,"Video path is error",Toast.LENGTH_SHORT).show();
             return;
         }
+
         try{
             mediaPlayer=new MediaPlayer();
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
@@ -313,15 +299,17 @@ public class ChatActivity extends AppCompatActivity {
                     //设置进度条最大进度为视频流的最大播放时长
                     seekBar.setMax(mediaPlayer.getDuration());
                     Log.d(TAG, "onPrepared: 最大播放时长"+mediaPlayer.getDuration());
-                    new Thread(){
+                  new Thread(){
                         @Override
                         public void run(){
+                            UIhandler.sendEmptyMessage(UPDATE_UI);
                             try{
                                 isplaying=true;
                                 while(isplaying){
                                     int current=mediaPlayer.getCurrentPosition();
                                     seekBar.setProgress(current);
                                     sleep(500);
+
                                 }
                             }catch (Exception e){
                                 e.printStackTrace();
