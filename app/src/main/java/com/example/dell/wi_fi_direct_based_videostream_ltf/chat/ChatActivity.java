@@ -223,7 +223,7 @@ public class ChatActivity extends AppCompatActivity {
             int progress =seekBar.getProgress();
             if (mediaPlayer!=null&& mediaPlayer.isPlaying()){
                 mediaPlayer.seekTo(progress);
-                Log.d(TAG, "onStopTrackingTouch: I touched the seekbar!!!");
+                Log.d(TAG, "onStopTrackingTouch: I touched the seekbar!!!!");
             }
         }
     };
