@@ -14,6 +14,7 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
+import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
@@ -66,9 +67,6 @@ public class ChatActivity extends AppCompatActivity {
     private Button stop;
     private Button replay;
     private Thread thread;
-    private Looper mylooper;
-    private Handler myhandler;
-    private MyHandler UIhandler = new MyHandler(this);
     private SurfaceHolder holder;
     /*
     以下变量的定义是为了实现本地视频显示在SurfaceView中
@@ -250,30 +248,32 @@ public class ChatActivity extends AppCompatActivity {
         }
     };
 
-    static class MyHandler extends Handler{
-        private final WeakReference<ChatActivity>mactivity;
-        MyHandler( ChatActivity activity){
-
-            mactivity=new WeakReference<ChatActivity>(activity);
-        }
-        @Override
-        public void handleMessage(Message msg){
-            ChatActivity activity=mactivity.get();
-            super.handleMessage(msg);
-            if(activity!=null){
-                switch (msg.what){
-                    case UPDATE_UI:
-//                        activity.UIhandler.sendMessageDelayed(msg,500);
-                        int position=activity.mediaPlayer.getCurrentPosition();
-                        int totalduration =activity.mediaPlayer.getDuration();
-                        activity.seekBar.setMax(totalduration);
-                        activity.seekBar.setProgress(position);
-                        Log.d(TAG, "handleMessage: 更新了呀丫丫丫丫");
-                        break;
-                }
-            }
-        }
-    }
+    /**
+     * 采用静态内部类+弱引用的方式，处理利用因使用Handler引起的内存泄漏问题
+     */
+//    static class MyHandler extends Handler{
+//        private final WeakReference<ChatActivity>mactivity;
+//        MyHandler( ChatActivity activity){
+//
+//            mactivity=new WeakReference<ChatActivity>(activity);
+//        }
+//        @Override
+//        public void handleMessage(Message msg){
+//            ChatActivity activity=mactivity.get();
+//            super.handleMessage(msg);
+//            if(activity!=null){
+//                switch (msg.what){
+//                    case UPDATE_UI:
+//                        int position=activity.mediaPlayer.getCurrentPosition();
+//                        int totalduration =activity.mediaPlayer.getDuration();
+//                        activity.seekBar.setMax(totalduration);
+//                        activity.seekBar.setProgress(position);
+//                        Log.d(TAG, "handleMessage: 更新了呀丫丫丫丫");
+//                        break;
+//                }
+//            }
+//        }
+//    }
     protected void play(final int msec){
         String path ="/storage/emulated/0/DCIM/Camera/b.mp4";
         File file =new File(path);
@@ -285,8 +285,8 @@ public class ChatActivity extends AppCompatActivity {
         try{
             mediaPlayer=new MediaPlayer();
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            mediaPlayer.setDataSource(file.getAbsolutePath());
-            //mediaPlayer.setDataSource();
+            //mediaPlayer.setDataSource(file.getAbsolutePath());
+           mediaPlayer.setDataSource(this, Uri.parse("http://192.168.137.1/aaa.mp4"));
             mediaPlayer.setDisplay(sv.getHolder());
             Log.i(TAG, "开始装载");
             mediaPlayer.prepareAsync();
@@ -299,23 +299,23 @@ public class ChatActivity extends AppCompatActivity {
                     //设置进度条最大进度为视频流的最大播放时长
                     seekBar.setMax(mediaPlayer.getDuration());
                     Log.d(TAG, "onPrepared: 最大播放时长"+mediaPlayer.getDuration());
-                  new Thread(){
+              thread=new Thread(){
                         @Override
                         public void run(){
-                            UIhandler.sendEmptyMessage(UPDATE_UI);
                             try{
                                 isplaying=true;
                                 while(isplaying){
                                     int current=mediaPlayer.getCurrentPosition();
                                     seekBar.setProgress(current);
                                     sleep(500);
-
+                                    Log.d(TAG, "run: 这是子线程里得run");
                                 }
                             }catch (Exception e){
                                 e.printStackTrace();
                             }
                         }
-                    }.start();
+                    };
+              thread.start();
                     play.setEnabled(false);
                 }
             });
@@ -378,6 +378,8 @@ public class ChatActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         unbindService(connection);
+        thread.interrupt();
+        thread=null;
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -391,15 +393,15 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
-//    @Override
-//    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-//        if (requestCode == STORAGE_REQUEST_CODE || requestCode == AUDIO_REQUEST_CODE) {
-//            if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-//                finish();
-//            }
-//        }
-//    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == STORAGE_REQUEST_CODE || requestCode == AUDIO_REQUEST_CODE) {
+            if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                finish();
+            }
+        }
+    }
 
 
     private ServiceConnection connection = new ServiceConnection() {

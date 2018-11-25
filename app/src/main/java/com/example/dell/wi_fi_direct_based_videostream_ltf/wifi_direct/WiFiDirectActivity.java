@@ -65,7 +65,9 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
         manager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
         channel = manager.initialize(this, getMainLooper(), null);
 
-
+/**
+ * 创建组按钮
+ */
         Button creategroup=(Button)findViewById(R.id.create_group);
 
         creategroup.setOnClickListener(new View.OnClickListener() {
