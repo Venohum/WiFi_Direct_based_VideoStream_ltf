@@ -76,9 +76,7 @@ public class RecordService extends Service {
   public boolean startRecord() {
     if (mediaProjection == null || running) {
       return false;
-
     }
-
     initRecorder();
     createVirtualDisplay();
     mediaRecorder.start();

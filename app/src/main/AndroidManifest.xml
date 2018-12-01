@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.example.dell.wi_fi_direct_based_videostream_ltf">
-
-    <uses-sdk android:minSdkVersion="14" />
 
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
@@ -12,10 +11,13 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_S     TORAGE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <uses-feature
         android:name="android.hardware.wifi.direct"
         android:required="true" />
+    <uses-feature android:name="android.hardware.camera2.full"
+        android:required="true"/>
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -26,7 +28,8 @@
         android:label="VideoStream"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        tools:ignore="GoogleAppIndexingWarning">
         <activity android:name=".wifi_direct.WiFiDirectActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -38,7 +41,9 @@
 
         <service android:name=".recorder.RecordService" />
 
-        <activity android:name=".chat.TextureActivity"></activity>
+        <activity android:name=".chat.TextureActivity" />
+
+        <activity android:name=".Camera.CameraActivity"/>
     </application>
 
 </manifest>

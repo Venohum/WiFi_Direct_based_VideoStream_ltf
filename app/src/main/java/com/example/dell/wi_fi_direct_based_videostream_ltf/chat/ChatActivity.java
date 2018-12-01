@@ -2,16 +2,19 @@ package com.example.dell.wi_fi_direct_based_videostream_ltf.chat;
 
 import android.Manifest;
 import android.annotation.TargetApi;
-import android.app.Activity;
-import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
-import android.graphics.Canvas;
+import android.hardware.Camera;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
 import android.media.AudioManager;
+import android.media.CamcorderProfile;
 import android.media.MediaPlayer;
+import android.media.MediaRecorder;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.net.Uri;
@@ -19,10 +22,8 @@ import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Build;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Looper;
-import android.os.Message;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -37,13 +38,13 @@ import android.widget.EditText;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Camera.CameraActivity;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Service.ServerAsyncTask;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Service.ClientAsynTask;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.recorder.RecordService;
 
-import java.io.File;
-import java.lang.ref.WeakReference;
+import java.io.IOException;
 
 import static com.example.dell.wi_fi_direct_based_videostream_ltf.R.id.Sendmessage;
 
@@ -58,6 +59,7 @@ public class ChatActivity extends AppCompatActivity {
     private static final int RECORD_REQUEST_CODE  = 101;
     private static final int STORAGE_REQUEST_CODE = 102;
     private static final int AUDIO_REQUEST_CODE   = 103;
+    private static final int CAMERA_REQUEST_CODE=104;
     private MediaProjectionManager projectionManager;
     private MediaProjection mediaProjection;
     private RecordService recordService;
@@ -66,8 +68,13 @@ public class ChatActivity extends AppCompatActivity {
     private Button pause;
     private Button stop;
     private Button replay;
+    private Button btn_sedm;
     private Thread thread;
-    private SurfaceHolder holder;
+    private CameraDevice camera;
+    private  MediaRecorder mediaRecorder;
+    private boolean isRecording=false;
+    private CameraDevice cameraDevice;
+
     /*
     以下变量的定义是为了实现本地视频显示在SurfaceView中
      */
@@ -88,12 +95,13 @@ public class ChatActivity extends AppCompatActivity {
 //        if (wifiP2pInfo!=null){
 //        Log.d(TAG, "哈哈哈哈哈,P2p地址是kong "+wifiP2pInfo.toString() );}
         //final SurfaceView surfaceView =(findViewById(R.id.surfaceView));
+        verifyPermission(new String[]{Manifest.permission.CAMERA});
         Intent intent1=getIntent();
         isgroupowner=intent1.getBooleanExtra("ChatActivity",true);
         wifiP2pManager=(WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
         WifiManager wifiManager=(WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         final EditText editText=(EditText)findViewById(R.id.Sendtext);
-        Button btn_sedm=(Button)findViewById(Sendmessage);
+
         ServerAsyncTask serverAsyncTask=new ServerAsyncTask(editText);
         ClientAsynTask clientAsynTask=new ClientAsynTask("成功");
 //        clientAsynTask.execute("192.168.49.1","5000","成功");
@@ -121,26 +129,28 @@ public class ChatActivity extends AppCompatActivity {
         pause=(Button)findViewById(R.id.btn_pause);
         stop=(Button)findViewById(R.id.btn_stop);
         replay=(Button)findViewById(R.id.btn_replay);
-
+        btn_sedm=(Button)findViewById(Sendmessage);
 
         play.setOnClickListener(click);
         pause.setOnClickListener(click);
         stop.setOnClickListener(click);
         replay.setOnClickListener(click);
+
         sv.getHolder().addCallback(callback);
         seekBar.setOnSeekBarChangeListener(change);
-        btn_sedm.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-//                message=Message.obtain();
-//                message.what=345;
-//                message.obj=editText.getText().toString();
-//                editText.setText("");
-//                if (clientThread.myhandler!=null){
-//                    clientThread.myhandler.sendMessage(message);
-//                }
-            }
-        });
+
+//        btn_sedm.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+////                message=Message.obtain();
+////                message.what=345;
+////                message.obj=editText.getText().toString();
+////                editText.setText("");
+////                if (clientThread.myhandler!=null){
+////                    clientThread.myhandler.sendMessage(message);
+////                }
+//            }
+//        });
         startBtn = (Button) findViewById(R.id.start_record);
 //        startBtn.setEnabled(false);
         /**
@@ -156,8 +166,24 @@ public class ChatActivity extends AppCompatActivity {
                 } else {
                     Intent captureIntent = projectionManager.createScreenCaptureIntent();
                     startActivityForResult(captureIntent, RECORD_REQUEST_CODE);
+                    /**
+                     * 用该方法启动活动，可以将结果返回到OnActivityResult()方法中
+                     */
 
                 }
+            }
+        });
+        /*
+        这是点击的相机按钮
+         */
+        btn_sedm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                Intent cameraIntent= new Intent();
+//                cameraIntent.setAction(MediaStore.INTENT_ACTION_VIDEO_CAMERA);
+//                startActivityForResult(cameraIntent,CAMERA_REQUEST_CODE);
+                Intent intent=new Intent(ChatActivity.this, CameraActivity.class);
+                startActivity(intent);
             }
         });
         if (ContextCompat.checkSelfPermission(ChatActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -171,9 +197,40 @@ public class ChatActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this,
                     new String[] {Manifest.permission.RECORD_AUDIO}, AUDIO_REQUEST_CODE);
         }
+        if (ContextCompat.checkSelfPermission(ChatActivity.this,Manifest.permission_group.CAMERA)!=PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this,new String[]{Manifest.permission_group.CAMERA},CAMERA_REQUEST_CODE);
+        }
         Intent intent = new Intent(this, RecordService.class);
         bindService(intent, connection, BIND_AUTO_CREATE);
-    }//OnCreate
+}//OnCreate
+
+    private void verifyPermission(String[] permissions) {
+
+
+
+    }
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private final CameraDevice.StateCallback stateCallback=new CameraDevice.StateCallback(){
+      @Override
+      public void onOpened(CameraDevice camera){
+          cameraDevice=camera;
+          videoRecorder();
+      }
+
+        @Override
+        public void onDisconnected(@NonNull CameraDevice camera) {
+          camera.close();
+          cameraDevice=null;
+
+        }
+        @Override
+        public void onError(@NonNull CameraDevice camera, int error) {
+          camera.close();
+          cameraDevice=null;
+
+        }
+    };
+
     private SurfaceHolder.Callback callback = new SurfaceHolder.Callback() {
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
@@ -226,6 +283,7 @@ public class ChatActivity extends AppCompatActivity {
         }
     };
     private View.OnClickListener click=new View.OnClickListener() {
+       // @RequiresApi(api = Build.VERSION_CODES.O)
         @Override
         public void onClick(View v) {
 
@@ -235,12 +293,18 @@ public class ChatActivity extends AppCompatActivity {
                         break;
                     case R.id.btn_play:
                         play(0);
+                        Log.d(TAG, "onClick: 点击了播放按钮");
                         break;
                     case R.id.btn_pause:
                         pause();
                         break;
                     case R.id.btn_stop:
                         stop();
+                        break;
+                    case Sendmessage:
+
+                        videoRecorder();
+                        Log.d(TAG, "onClick: 反映呢？");
                         break;
                     default:
                         break;
@@ -275,12 +339,12 @@ public class ChatActivity extends AppCompatActivity {
 //        }
 //    }
     protected void play(final int msec){
-        String path ="/storage/emulated/0/DCIM/Camera/b.mp4";
-        File file =new File(path);
-        if (!file.exists()){
-            Toast.makeText(this,"Video path is error",Toast.LENGTH_SHORT).show();
-            return;
-        }
+//        String path ="/storage/emulated/0/DCIM/Camera/b.mp4";
+//        File file =new File(path);
+//        if (!file.exists()){
+//            Toast.makeText(this,"Video path is error",Toast.LENGTH_SHORT).show();
+//            return;
+//        }
 
         try{
             mediaPlayer=new MediaPlayer();
@@ -378,8 +442,12 @@ public class ChatActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         unbindService(connection);
+        if (thread!=null){
         thread.interrupt();
-        thread=null;
+        thread=null;}
+        if (camera!=null){
+//            camera.release();
+        }
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -390,6 +458,10 @@ public class ChatActivity extends AppCompatActivity {
             recordService.setMediaProject(mediaProjection);
             recordService.startRecord();
             startBtn.setText(R.string.stop_record);
+        }
+        if (requestCode==CAMERA_REQUEST_CODE){
+            btn_sedm.setText("又他妈出错了");
+            Log.d(TAG, "onActivityResult: 打开了录像功能");
         }
     }
 
@@ -418,5 +490,111 @@ public class ChatActivity extends AppCompatActivity {
         @Override
         public void onServiceDisconnected(ComponentName arg0) {}
     };
+    /**
+     * 相机开发部分：
+     */
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    public void openCamera(){
+//         Camera camera = null;
+//
+//        try {
+//            camera=Camera.open();
+//            if (camera==null){Log.d(TAG, "getCamerainstance: 没得到相机");
+//
+//            }
+//        }catch (Exception e){
+//            camera=null;
+//            Log.d(TAG, "getCamerainstance:看异常"+e.toString());
+//            e.printStackTrace();
+//        }
+//        return camera;
+        CameraManager cameraManager=(CameraManager)getSystemService(Context.CAMERA_SERVICE);
+        try{
+            if (ActivityCompat.checkSelfPermission(this,Manifest.permission_group.CAMERA)!=PackageManager.PERMISSION_GRANTED){
+                return;
+            }
+            cameraManager.openCamera("1",stateCallback,null);
+        }catch (CameraAccessException e){
+            e.printStackTrace();
+        }
+
+
+    }
+
+    //RequiresApi(api = Build.VERSION_CODES.O)
+    private boolean prepareVideoRecorder(CameraDevice cameraDevice){
+        camera=cameraDevice;
+       mediaRecorder=new MediaRecorder();
+        /**
+         * 第1步：解锁摄像头并指响MediaRecorder
+         */
+        if(camera!=null){
+//        mediaRecorder.setCamera();
+        }
+        /**
+         * 第2步：指定音/视频源
+         */
+        mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+        mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+        /**
+         * 第3步：指定CamcorderProfile(相机配置文件)
+         */
+        mediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH));
+        /**
+         * 第4步：指定输出文件
+         */
+        mediaRecorder.setOutputFile(new RecordService().getsaveDirectory()+System.currentTimeMillis()+".mp4");
+        /**
+         * 第5步：指定预览输出
+         */
+        mediaRecorder.setPreviewDisplay(sv.getHolder().getSurface());
+        /**
+         * 第6步：根据以上配置准备MediaRecorder
+         */
+        try{
+            mediaRecorder.prepare();
+        }catch (IllegalStateException e){
+            Log.d(TAG, "IllegealStateException preparing MediaRecorder: "+e.getMessage());
+            releaseMediaRecorder();
+            return false;
+        }catch (IOException e){
+            Log.d(TAG, "prepareVideoRecorder: "+e.getMessage());
+        }
+        return true;
+    }
+    private void releaseMediaRecorder(){
+
+        if (mediaRecorder!= null) {
+
+            mediaRecorder.reset(); // 清除recorder配置
+
+            mediaRecorder.release(); // 释放recorder对象
+
+            mediaRecorder= null;
+
+//            camera.lock();           // 为后续使用锁定摄像头
+
+        }
+
+    }
+    //@RequiresApi(api = Build.VERSION_CODES.O)
+    private void videoRecorder(){
+        if (isRecording){
+            //Stop recorder and release the camera
+            mediaRecorder.stop();
+            releaseMediaRecorder();
+            Toast.makeText(this,"录像已经停止",Toast.LENGTH_SHORT).show();
+        }else {
+            if (true){
+                mediaRecorder.start();
+                Toast.makeText(this,"录像已经开始",Toast.LENGTH_SHORT).show();
+            }else {
+                releaseMediaRecorder();
+                Toast.makeText(this,"出错，录像已经停止！",Toast.LENGTH_SHORT).show();
+            }
+        }
+
+    }
+
 }
 

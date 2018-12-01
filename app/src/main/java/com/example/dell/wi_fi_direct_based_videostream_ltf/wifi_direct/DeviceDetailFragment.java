@@ -46,9 +46,7 @@ public class DeviceDetailFragment extends Fragment implements WifiP2pManager.Con
                     progressDialog.dismiss();
                 }
                 progressDialog = ProgressDialog.show(getActivity(), "Press back to cancel",
-                        "Connecting to :" + device.deviceAddress, true, true
-
-                        ,new DialogInterface.OnCancelListener() {
+                        "Connecting to :" + device.deviceAddress, true, true,new DialogInterface.OnCancelListener() {
                             @Override
                             public void onCancel(DialogInterface dialog) {
                                 ((DeviceActionListener) getActivity()).cancelDisconnect();
@@ -95,7 +93,7 @@ public class DeviceDetailFragment extends Fragment implements WifiP2pManager.Con
         this.device = device;
         this.getView().setVisibility(View.VISIBLE);
         TextView view = (TextView) mContentView.findViewById(R.id.device_address);
-       view.setText("DeviceMacAddress:"+device.deviceAddress);
+        view.setText("DeviceMacAddress:"+device.deviceAddress);
         view = (TextView) mContentView.findViewById(R.id.device_info);
         view.setText(device.toString());
 

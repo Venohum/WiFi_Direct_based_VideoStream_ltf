@@ -65,7 +65,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/Replay"
-                tools:ignore="ButtonStyle"/>
+                tools:ignore="ButtonStyle" />
 
         </LinearLayout>
     </LinearLayout>
