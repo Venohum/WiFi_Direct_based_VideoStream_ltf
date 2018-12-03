@@ -3,7 +3,9 @@ package com.example.dell.wi_fi_direct_based_videostream_ltf.Service;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.EditText;
+import android.widget.Toast;
 
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetAddress;
@@ -13,13 +15,13 @@ import java.net.SocketException;
 
 import static com.example.dell.wi_fi_direct_based_videostream_ltf.chat.ChatActivity.TAG;
 
-public class ClientAsynTask extends AsyncTask <String,String,Void>{
+public class ClientAsynTask extends AsyncTask <String,String,Boolean>{
     String string;
     public ClientAsynTask(String s){
         this.string=s;
     }
     @Override
-    protected Void doInBackground(String... strings) {
+    protected Boolean doInBackground(String... strings) {
         try{
             Socket socket=new Socket();
             InetAddress inetAddress=InetAddress.getByName("192.168.49.1");
@@ -35,8 +37,9 @@ public class ClientAsynTask extends AsyncTask <String,String,Void>{
         }catch (Exception e){
             e.printStackTrace();
             Log.d(TAG,"ClientAsynTask错误了");
+            return false;
         }
-       return null;
+       return true;
     }
     @Override
     protected void onPreExecute() {
@@ -47,6 +50,19 @@ public class ClientAsynTask extends AsyncTask <String,String,Void>{
         super.onProgressUpdate(values);
         Log.d(TAG,values.toString());
 
+    }
+
+    @Override
+    protected void onPostExecute(Boolean aBoolean) {
+        super.onPostExecute(aBoolean);
+        if (aBoolean){
+            Log.d(TAG, "onPostExecute: 客户端连上了");
+        }
+            else{
+            Log.d(TAG, "onPostExecute: 没连上");
+
+
+        }
     }
 }
 

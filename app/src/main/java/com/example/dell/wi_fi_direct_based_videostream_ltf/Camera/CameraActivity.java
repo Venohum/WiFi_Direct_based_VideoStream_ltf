@@ -66,9 +66,10 @@ public class CameraActivity extends AppCompatActivity {
         super.onResume();
         initCameraThread();
         mSurfaceHolder=surfaceView.getHolder();
-        surfaceView.setZOrderMediaOverlay(true);
+        surfaceView.setZOrderMediaOverlay(true);//把控件放在窗口最顶层
         mSurfaceHolder.setFormat(PixelFormat.TRANSLUCENT);
         mSurfaceHolder.addCallback(mSurfaceHolderCallback);
+        Log.d(TAG, "onResume: onResume 执行了");
     }
     private void initCameraThread(){
         mCameraThread=new HandlerThread("CameraSurfaceViewThread");
@@ -160,6 +161,9 @@ public class CameraActivity extends AppCompatActivity {
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
             mCameraDevice=camera;
+            /**
+             * 开始预览
+             */
             startPreView();
 
         }
@@ -185,8 +189,10 @@ public class CameraActivity extends AppCompatActivity {
         }
     };
 
-
-@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    /**
+     * 开始预览函数
+     */
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private void startPreView(){
         try {
             Surface surface = mSurfaceHolder.getSurface();

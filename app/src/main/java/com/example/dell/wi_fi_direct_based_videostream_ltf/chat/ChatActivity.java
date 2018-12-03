@@ -36,6 +36,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Camera.CameraActivity;
@@ -97,15 +98,15 @@ public class ChatActivity extends AppCompatActivity {
         //final SurfaceView surfaceView =(findViewById(R.id.surfaceView));
         verifyPermission(new String[]{Manifest.permission.CAMERA});
         Intent intent1=getIntent();
-        isgroupowner=intent1.getBooleanExtra("ChatActivity",true);
+        isgroupowner=intent1.getBooleanExtra("ChatActivity",false);
         wifiP2pManager=(WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
         WifiManager wifiManager=(WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        final EditText editText=(EditText)findViewById(R.id.Sendtext);
+        final TextView textView=(TextView) findViewById(R.id.chat_content);
 
-        ServerAsyncTask serverAsyncTask=new ServerAsyncTask(editText);
+        ServerAsyncTask serverAsyncTask=new ServerAsyncTask(textView);
         ClientAsynTask clientAsynTask=new ClientAsynTask("成功");
-//        clientAsynTask.execute("192.168.49.1","5000","成功");
-        if (isgroupowner==true){
+       // clientAsynTask.execute("192.168.49.1","5000","成功");
+        if (isgroupowner){
         serverAsyncTask.execute(50000);}
        else {
             clientAsynTask.execute("成功");
@@ -179,11 +180,7 @@ public class ChatActivity extends AppCompatActivity {
         btn_sedm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                Intent cameraIntent= new Intent();
-//                cameraIntent.setAction(MediaStore.INTENT_ACTION_VIDEO_CAMERA);
-//                startActivityForResult(cameraIntent,CAMERA_REQUEST_CODE);
-                Intent intent=new Intent(ChatActivity.this, CameraActivity.class);
-                startActivity(intent);
+
             }
         });
         if (ContextCompat.checkSelfPermission(ChatActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -289,22 +286,18 @@ public class ChatActivity extends AppCompatActivity {
 
                 switch (v.getId()){
                     case R.id.btn_replay:
-                        replay();
+                        //replay();
+                        Intent intent=new Intent(ChatActivity.this, CameraActivity.class);
+                        startActivity(intent);
                         break;
                     case R.id.btn_play:
                         play(0);
-                        Log.d(TAG, "onClick: 点击了播放按钮");
                         break;
                     case R.id.btn_pause:
                         pause();
                         break;
                     case R.id.btn_stop:
                         stop();
-                        break;
-                    case Sendmessage:
-
-                        videoRecorder();
-                        Log.d(TAG, "onClick: 反映呢？");
                         break;
                     default:
                         break;
@@ -350,7 +343,7 @@ public class ChatActivity extends AppCompatActivity {
             mediaPlayer=new MediaPlayer();
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             //mediaPlayer.setDataSource(file.getAbsolutePath());
-           mediaPlayer.setDataSource(this, Uri.parse("http://192.168.137.1/aaa.mp4"));
+           mediaPlayer.setDataSource(this, Uri.parse("rtmp://58.200.131.2:1935/livetv/hunantv"));
             mediaPlayer.setDisplay(sv.getHolder());
             Log.i(TAG, "开始装载");
             mediaPlayer.prepareAsync();
@@ -427,7 +420,6 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     protected void replay(){
-        Log.d(TAG, "replay: 99999999999999999999999999");
         if (mediaPlayer!=null&&mediaPlayer.isPlaying()){
             mediaPlayer.seekTo(0);
             Toast.makeText(this,"重新播放",Toast.LENGTH_SHORT).show();
@@ -435,7 +427,6 @@ public class ChatActivity extends AppCompatActivity {
         }
         isplaying=false;
         play(0);
-        Log.d(TAG, "replay: zahuiushi ");
     }
 
     @Override
