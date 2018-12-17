@@ -116,7 +116,7 @@ public class RecordService extends Service {
     mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
     mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
     mediaRecorder.setVideoEncodingBitRate(5*1024*1024);//关乎视频的清晰度，可设计动态码率调节算法
-    mediaRecorder.setVideoFrameRate(4);//人的肉眼所能观看到的极限
+    mediaRecorder.setVideoFrameRate(24);//人的肉眼所能观看到的极限
 
     try {
       mediaRecorder.prepare();

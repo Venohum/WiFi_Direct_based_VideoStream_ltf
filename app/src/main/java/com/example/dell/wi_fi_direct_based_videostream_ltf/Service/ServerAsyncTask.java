@@ -38,7 +38,7 @@ public class ServerAsyncTask extends AsyncTask<Integer,String,Void>{
             String line;
             while((line=bufferedReader.readLine())!=null){
 //                msgFromClient=msgFromClient+line;
-                 s=s+line;
+                 s=line;
             }
             serverSocket.close();
             publishProgress(s==null?"get nothing":s);

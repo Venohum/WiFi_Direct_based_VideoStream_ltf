@@ -10,7 +10,23 @@
 
     <SurfaceView
         android:id="@+id/sfvSurfaceView"
+        android:layout_width="240dp"
+        android:layout_height="160dp" />
+
+    <TextView
+        android:id="@+id/textView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="wrap_content"
+        android:text="SurfaceViewActivity2" />
+
+    <SurfaceView
+        android:id="@+id/sfvSurfaceView2"
+        android:layout_width="240dp"
+        android:layout_height="160dp" />
+    <Button
+        android:id="@+id/pipi"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="编码"/>
 
 </LinearLayout>

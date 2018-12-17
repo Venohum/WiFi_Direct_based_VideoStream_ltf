@@ -21,8 +21,11 @@ import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
+import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -46,8 +49,15 @@ import com.example.dell.wi_fi_direct_based_videostream_ltf.Service.ClientAsynTas
 import com.example.dell.wi_fi_direct_based_videostream_ltf.recorder.RecordService;
 
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.lang.ref.WeakReference;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 
-import static com.example.dell.wi_fi_direct_based_videostream_ltf.R.id.Sendmessage;
+import static com.example.dell.wi_fi_direct_based_videostream_ltf.R.id.btn_send;
+import static com.example.dell.wi_fi_direct_based_videostream_ltf.R.id.group_owner;
 
 public class ChatActivity extends AppCompatActivity {
     WifiP2pInfo wifiP2pInfo;
@@ -75,6 +85,13 @@ public class ChatActivity extends AppCompatActivity {
     private  MediaRecorder mediaRecorder;
     private boolean isRecording=false;
     private CameraDevice cameraDevice;
+    private EditText editText;
+    private ClientThread.ClientHandler handler;
+    private MyHandler myHandler=new MyHandler(this);
+    private Message message;
+    private TextView textView;
+    private String[] type;
+    private Thread thread_client,thread_server;
 
     /*
     以下变量的定义是为了实现本地视频显示在SurfaceView中
@@ -86,6 +103,11 @@ public class ChatActivity extends AppCompatActivity {
     private EditText et_path;
     private int currentPostition = 0;
     public static final int UPDATE_UI =1;
+
+//    handler=new Handler(){
+//
+//    };
+
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,24 +123,43 @@ public class ChatActivity extends AppCompatActivity {
         isgroupowner=intent1.getBooleanExtra("ChatActivity",false);
         wifiP2pManager=(WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
         WifiManager wifiManager=(WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        final TextView textView=(TextView) findViewById(R.id.chat_content);
+         textView=(TextView) findViewById(R.id.chat_content);
+        editText=(EditText)findViewById(R.id.Sendtext);
 
-        ServerAsyncTask serverAsyncTask=new ServerAsyncTask(textView);
-        ClientAsynTask clientAsynTask=new ClientAsynTask("成功");
-       // clientAsynTask.execute("192.168.49.1","5000","成功");
-        if (isgroupowner){
-        serverAsyncTask.execute(50000);}
-       else {
-            clientAsynTask.execute("成功");
+        final ServerAsyncTask serverAsyncTask=new ServerAsyncTask(textView);
+        final ClientAsynTask clientAsynTask=new ClientAsynTask("192.168.49.1");
+        /**
+         * 利用AsynTask实现socket连接，
+         *    if (isgroupowner){
+         *         serverAsyncTask.execute(50000);}
+         *        else {
+         *             clientAsynTask.execute("192.168.49.1");
+         *         }
+         */
+
+        /**
+         * 利用handler实现线程之间消息传递，socket连接，流传输等等
+         */
+        type=new String[2];
+        if (isgroupowner&&serverThread==null){
+            type[0]="group_owner";
+        serverThread=new ServerThread(type,myHandler);
+       thread_server= new Thread(serverThread);
+               thread_server.start();
+            Log.d(ChatActivity.TAG,"线程第一次被创建");
+
         }
-        /*
-        if (serverThread==null){
-        serverThread=new ServerThread("read",handler);
-        new Thread(serverThread).start();
-            Log.d(ChatActivity.TAG,"线程第一次被创建");}
-        if (clientThread==null){
-        clientThread=new ClientThread("write",handler);
-        new Thread(clientThread).start();}*/
+        /**
+         *
+         */
+        if (!isgroupowner&&clientThread==null){
+            //type[0]="group_client";
+            type[0]="group_client";
+        clientThread=new ClientThread(type,myHandler);
+        thread_client=new Thread(clientThread);
+        thread_client.start();
+        }
+
 /**
  * 测试使用SurfaceView播放视频
  *
@@ -130,28 +171,41 @@ public class ChatActivity extends AppCompatActivity {
         pause=(Button)findViewById(R.id.btn_pause);
         stop=(Button)findViewById(R.id.btn_stop);
         replay=(Button)findViewById(R.id.btn_replay);
-        btn_sedm=(Button)findViewById(Sendmessage);
+        btn_sedm=(Button)findViewById(R.id.btn_send);
 
         play.setOnClickListener(click);
         pause.setOnClickListener(click);
         stop.setOnClickListener(click);
         replay.setOnClickListener(click);
-
+        //btn_sedm.setOnClickListener(click);
         sv.getHolder().addCallback(callback);
         seekBar.setOnSeekBarChangeListener(change);
+/**
+ * 发送消息按钮的监听事件
+ */
+        btn_sedm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                message=Message.obtain();
+                message.obj=editText.getText().toString();
+                editText.setText("");
+                if(!isgroupowner){
+                message.what=345;}else {
+                    message.what=346;
+                }
+                    switch (message.what) {
+                        case 345:
+                            clientThread.handler.handleMessage(message);
+                            break;
+                        case 346:
+                            serverThread.serverHandler.handleMessage(message);
+                        break;
+                        default:
+                            break;
+                    }
+                }
 
-//        btn_sedm.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-////                message=Message.obtain();
-////                message.what=345;
-////                message.obj=editText.getText().toString();
-////                editText.setText("");
-////                if (clientThread.myhandler!=null){
-////                    clientThread.myhandler.sendMessage(message);
-////                }
-//            }
-//        });
+        });
         startBtn = (Button) findViewById(R.id.start_record);
 //        startBtn.setEnabled(false);
         /**
@@ -166,21 +220,12 @@ public class ChatActivity extends AppCompatActivity {
                     startBtn.setText(R.string.start_record);
                 } else {
                     Intent captureIntent = projectionManager.createScreenCaptureIntent();
-                    startActivityForResult(captureIntent, RECORD_REQUEST_CODE);
                     /**
                      * 用该方法启动活动，可以将结果返回到OnActivityResult()方法中
                      */
+                    startActivityForResult(captureIntent, RECORD_REQUEST_CODE);
 
                 }
-            }
-        });
-        /*
-        这是点击的相机按钮
-         */
-        btn_sedm.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
             }
         });
         if (ContextCompat.checkSelfPermission(ChatActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -299,6 +344,8 @@ public class ChatActivity extends AppCompatActivity {
                     case R.id.btn_stop:
                         stop();
                         break;
+                    case R.id.btn_send:
+                        //sendmessage();
                     default:
                         break;
                 }
@@ -308,29 +355,25 @@ public class ChatActivity extends AppCompatActivity {
     /**
      * 采用静态内部类+弱引用的方式，处理利用因使用Handler引起的内存泄漏问题
      */
-//    static class MyHandler extends Handler{
-//        private final WeakReference<ChatActivity>mactivity;
-//        MyHandler( ChatActivity activity){
-//
-//            mactivity=new WeakReference<ChatActivity>(activity);
-//        }
-//        @Override
-//        public void handleMessage(Message msg){
-//            ChatActivity activity=mactivity.get();
-//            super.handleMessage(msg);
-//            if(activity!=null){
-//                switch (msg.what){
-//                    case UPDATE_UI:
-//                        int position=activity.mediaPlayer.getCurrentPosition();
-//                        int totalduration =activity.mediaPlayer.getDuration();
-//                        activity.seekBar.setMax(totalduration);
-//                        activity.seekBar.setProgress(position);
-//                        Log.d(TAG, "handleMessage: 更新了呀丫丫丫丫");
-//                        break;
-//                }
-//            }
-//        }
-//    }
+    static class MyHandler extends Handler {
+        private final WeakReference<ChatActivity>mactivity;
+        MyHandler( ChatActivity activity){
+            mactivity=new WeakReference<ChatActivity>(activity);
+        }
+        @Override
+        public void handleMessage(Message msg){
+            ChatActivity activity=mactivity.get();
+            super.handleMessage(msg);
+            if(activity!=null){
+                switch (msg.what){
+                    case 1:
+                        activity.textView.setText(msg.obj.toString());
+                        Log.d(TAG, "handleMessage: "+msg.obj.toString());
+                        break;
+                }
+            }
+        }
+    }
     protected void play(final int msec){
 //        String path ="/storage/emulated/0/DCIM/Camera/b.mp4";
 //        File file =new File(path);
@@ -343,7 +386,7 @@ public class ChatActivity extends AppCompatActivity {
             mediaPlayer=new MediaPlayer();
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             //mediaPlayer.setDataSource(file.getAbsolutePath());
-           mediaPlayer.setDataSource(this, Uri.parse("rtmp://58.200.131.2:1935/livetv/hunantv"));
+           mediaPlayer.setDataSource(this, Uri.parse("http://192.168.137.1/aaa.mp4"));
             mediaPlayer.setDisplay(sv.getHolder());
             Log.i(TAG, "开始装载");
             mediaPlayer.prepareAsync();
@@ -430,6 +473,12 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         unbindService(connection);
@@ -439,6 +488,23 @@ public class ChatActivity extends AppCompatActivity {
         if (camera!=null){
 //            camera.release();
         }
+        if (!isgroupowner)
+            if (thread_client.isAlive()){
+                //thread_client.interrupt();
+                thread_client.stop();
+                Log.d(TAG, "onDestroy:"+thread_client.getName()+" 组员线程中断");
+            }
+        if (isgroupowner)
+            if (thread_server.isAlive()){
+                thread_server.interrupt();
+                Log.d(TAG, "onDestroy:"+thread_server.getName()+" 组主线程中断");
+            }
+            else{
+                Log.d(TAG, "onDestroy: 组主线程早已切断！");
+            }
+
+        
+        
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -586,6 +652,5 @@ public class ChatActivity extends AppCompatActivity {
         }
 
     }
-
 }
 

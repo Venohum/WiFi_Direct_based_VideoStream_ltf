@@ -5,6 +5,8 @@ import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.example.dell.wi_fi_direct_based_videostream_ltf.chat.ChatActivity;
+
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -21,19 +23,22 @@ public class ClientAsynTask extends AsyncTask <String,String,Boolean>{
         this.string=s;
     }
     @Override
-    protected Boolean doInBackground(String... strings) {
+    protected Boolean doInBackground(String... string) {
         try{
             Socket socket=new Socket();
             InetAddress inetAddress=InetAddress.getByName("192.168.49.1");
             socket.connect(new InetSocketAddress(inetAddress,50000));
+                Log.d(TAG, "doInBackground: strings"+string[0]);
             if (socket.isConnected()) {
                 Log.d(TAG, "连接到服务器！！！ ");
             }else{
                 Log.d(TAG, "连接到服务器失败！！！ ");}
             PrintWriter printWriter=new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
-            printWriter.println(string);
+
+            printWriter.println(string[0]);
+
             printWriter.flush();
-            socket.close();
+            socket.close();//传输一次socket就被关闭了
         }catch (Exception e){
             e.printStackTrace();
             Log.d(TAG,"ClientAsynTask错误了");
@@ -45,10 +50,11 @@ public class ClientAsynTask extends AsyncTask <String,String,Boolean>{
     protected void onPreExecute() {
         super.onPreExecute();
     }
+
     @Override
     protected void onProgressUpdate(String... values) {
         super.onProgressUpdate(values);
-        Log.d(TAG,values.toString());
+        Log.d(TAG,values[0]);
 
     }
 

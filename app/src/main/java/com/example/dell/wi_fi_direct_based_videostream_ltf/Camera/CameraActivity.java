@@ -1,19 +1,27 @@
 package com.example.dell.wi_fi_direct_based_videostream_ltf.Camera;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Camera;
+import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
-import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.CamcorderProfile;
+import android.media.Image;
+import android.media.ImageReader;
+import android.media.MediaCodec;
+import android.media.MediaCodecList;
+import android.media.MediaFormat;
 import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Handler;
@@ -28,10 +36,16 @@ import android.util.Size;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TabHost;
 
 import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.recorder.RecordService;
 
+import java.io.IOException;
+import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,46 +56,84 @@ import java.util.List;
  * 相机开发：
  */
 public class CameraActivity extends AppCompatActivity {
-    private Camera camera;
-    private static final String TAG=CameraActivity.class.getSimpleName();
-    private CaptureRequest.Builder mCaptureRequestBuilder;
-    private SurfaceView surfaceView;
+    public static final String TAG = CameraActivity.class.getSimpleName();
+    private CaptureRequest.Builder mCaptureRequestBuilder,mCaptureRequestBuilder2;
+    private SurfaceView surfaceView,surfaceView2;
     private HandlerThread mCameraThread;
-    private Handler mCameraHandler;
-    private SurfaceHolder mSurfaceHolder;
+    private HandlerThread mCameraThread2;
+    private Handler mCameraHandler,mCameraHandler2;
+    private SurfaceHolder mSurfaceHolder,mSurfaceHolder2;
     private Size mPreviewSize;
     private String mCameraId;
     private CameraDevice mCameraDevice;
-    private CaptureRequest mCaptureRequest;
-    private CameraCaptureSession mCameraCaptureSession;
+    private CaptureRequest mCaptureRequest,mCaptureRequest2;
+    private CameraCaptureSession mCameraCaptureSession,mCameraCaptureSession2;
+    private ImageReader mImageReader;
+    private Button pill;
+    private int framerate = 12;//每秒帧率
+    private int bitrate = 1500000;//编码比特率，
+//    private byte[] h264=new byte[width*height*3];
+    private byte[][] data=new byte[3][];
+    private Encoder encoder;
+
+
+    public CameraActivity() throws IOException {
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
-        surfaceView=(SurfaceView)findViewById(R.id.sfvSurfaceView);
+        surfaceView = (SurfaceView) findViewById(R.id.sfvSurfaceView);
+        surfaceView2=(SurfaceView)findViewById(R.id.sfvSurfaceView2);
+        pill=(Button)findViewById(R.id.pipi);
+        pill.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                for (int i=0;i<100;i++)
+                try {
+                    startEncode();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+        });
+
+        Log.d(TAG, "onCreate: onCreat执行了！");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         initCameraThread();
-        mSurfaceHolder=surfaceView.getHolder();
+        mSurfaceHolder = surfaceView.getHolder();
+        mSurfaceHolder2=surfaceView2.getHolder();
         surfaceView.setZOrderMediaOverlay(true);//把控件放在窗口最顶层
+        surfaceView2.setZOrderMediaOverlay(true);
         mSurfaceHolder.setFormat(PixelFormat.TRANSLUCENT);
         mSurfaceHolder.addCallback(mSurfaceHolderCallback);
+        mSurfaceHolder2.setFormat(PixelFormat.TRANSLUCENT);
+       // mSurfaceHolder2.addCallback(mSurfaceHolderCallback);
+
         Log.d(TAG, "onResume: onResume 执行了");
     }
-    private void initCameraThread(){
-        mCameraThread=new HandlerThread("CameraSurfaceViewThread");
+
+    private void initCameraThread() {
+        mCameraThread = new HandlerThread("CameraSurfaceViewThread");
         mCameraThread.start();
-        mCameraHandler=new Handler(mCameraThread.getLooper());
+        mCameraHandler = new Handler(mCameraThread.getLooper());
     }
-    private SurfaceHolder.Callback mSurfaceHolderCallback=new SurfaceHolder.Callback() {
-       @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+
+    private SurfaceHolder.Callback mSurfaceHolderCallback = new SurfaceHolder.Callback() {
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
-            setupCamera(holder.getSurfaceFrame().width(),holder.getSurfaceFrame().height());
+            setupCamera(holder.getSurfaceFrame().width(), holder.getSurfaceFrame().height());
+
             openCamera();
+            Log.d(TAG, "surfaceCreated: openCamera 已经执行！");
         }
 
         @Override
@@ -96,27 +148,29 @@ public class CameraActivity extends AppCompatActivity {
     };
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    private void setupCamera(int width,int height){
-        CameraManager cameraManager=(CameraManager) getSystemService(Context.CAMERA_SERVICE);
-        try{
-            for(String cameraId : cameraManager.getCameraIdList()){
-                CameraCharacteristics cameraCharacteristics=cameraManager.getCameraCharacteristics(cameraId);
-                Integer facing =cameraCharacteristics.get(CameraCharacteristics.LENS_FACING);
-                //此处默认打开后置摄像头
-                if (facing!=null&&facing==CameraCharacteristics.LENS_FACING_FRONT)
-                    continue;
-                StreamConfigurationMap map=cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-                assert map!=null;
-                mPreviewSize=getOptimalSize(map.getOutputSizes(SurfaceTexture.class),width,height);
-                mCameraId=cameraId;
+    private void setupCamera(int width, int height) {
+        CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+        if (cameraManager != null)
+            try {
+                for (String cameraId : cameraManager.getCameraIdList()) {
+                    CameraCharacteristics cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId);
+                    Integer facing = cameraCharacteristics.get(CameraCharacteristics.LENS_FACING);
+                    //此处默认打开后置摄像头
+                    if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT)
+                        continue;
+                    StreamConfigurationMap map = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                    assert map != null;
+                    mPreviewSize = getOptimalSize(map.getOutputSizes(SurfaceTexture.class), width, height);
+                    mCameraId = cameraId;
 
+                }
+            } catch (CameraAccessException e) {
+                e.printStackTrace();
             }
-        }catch (CameraAccessException e){
-            e.printStackTrace();
-        }
 
 
     }
+
     //选择sizeMap中大于并且最接近width和height的size
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private Size getOptimalSize(Size[] sizeMap, int width, int height) {
@@ -142,48 +196,64 @@ public class CameraActivity extends AppCompatActivity {
         }
         return sizeMap[0];
     }
+
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    private void openCamera(){
+    private void openCamera() {
         CameraManager cameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "openCamera: 没有授权相机！");
             return;
         }
         try {
-            Log.d(TAG,"mCameraId === " + mCameraId);
-            if (cameraManager!=null)
-            cameraManager.openCamera(mCameraId,mCameraDeviceStateCallback,mCameraHandler);
+            Log.d(TAG, "mCameraId === " + mCameraId);
+            if (cameraManager != null)
+                cameraManager.openCamera(mCameraId, mCameraDeviceStateCallback, mCameraHandler);
+
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
-    @RequiresApi(api=Build.VERSION_CODES.LOLLIPOP)
-    private CameraDevice.StateCallback mCameraDeviceStateCallback=new CameraDevice.StateCallback() {
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    /**
+     *该类是CameraDevice的内部类，其中定义了
+     * onOpened， onDisconnected，onError三个方法，
+     * 这三个方法需要用户来实现。系统会根据打开 Camera 设备的状态结果，回调三个不同的方法。
+     *
+     */
+    private CameraDevice.StateCallback mCameraDeviceStateCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
-            mCameraDevice=camera;
+            mCameraDevice = camera;
+            /**
+             * 初始化编码器
+             */
+            initEncoder();
             /**
              * 开始预览
              */
             startPreView();
+            encoder.surface=surfaceView.getHolder().getSurface();
+
 
         }
 
         @Override
         public void onDisconnected(@NonNull CameraDevice camera) {
-            if (mCameraDevice!=null){
+            if (mCameraDevice != null) {
                 mCameraDevice.close();
                 camera.close();
-                mCameraDevice=null;
+                mCameraDevice = null;
             }
 
         }
 
         @Override
         public void onError(@NonNull CameraDevice camera, int error) {
-            if (mCameraDevice!=null){
+            if (mCameraDevice != null) {
                 mCameraDevice.close();
                 camera.close();
-                mCameraDevice=null;
+                mCameraDevice = null;
             }
 
         }
@@ -193,51 +263,140 @@ public class CameraActivity extends AppCompatActivity {
      * 开始预览函数
      */
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    private void startPreView(){
+    private void startPreView() {
         try {
+            mImageReader = ImageReader.newInstance(surfaceView.getWidth(), surfaceView.getHeight(), ImageFormat.YUV_420_888, 2);
+            mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mCameraHandler);
             Surface surface = mSurfaceHolder.getSurface();
+            mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);//视频帧率有区别
+            if (surface != null) {
+                Log.d(TAG, "SURFACE不为空");
 
-            mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            if (surface!=null){
-                Log.d(TAG,"SURFACE不为空");
-                mCaptureRequestBuilder.addTarget(surface);
-            }else {
-                Log.d(TAG,"SURFACE为空");
+                mCaptureRequestBuilder.addTarget(surface);//用于显示在SurfaceView中预览
+                mCaptureRequestBuilder.addTarget(mImageReader.getSurface());//用于ImageReader获取数据
+                mCaptureRequestBuilder.addTarget(encoder.surface);
+
+            } else {
+                Log.d(TAG, "SURFACE为空");
             }
-
-            mCameraDevice.createCaptureSession(Arrays.asList(surface), new CameraCaptureSession.StateCallback() {
+            /**
+             *注意，以下参数列表中有两个surface，其中分别为SurfaceView的
+             * 以及用来获取byte[]的ImageReader的surface
+             *,encoder.surface
+             *
+             */
+            mCameraDevice.createCaptureSession(Arrays.asList(surface,mImageReader.getSurface(),encoder.surface), new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
                     mCaptureRequest = mCaptureRequestBuilder.build();
                     mCameraCaptureSession = session;
                     try {
-                        mCameraCaptureSession.setRepeatingRequest(mCaptureRequest,null,mCameraHandler);
+                        mCameraCaptureSession.setRepeatingRequest(mCaptureRequest, new CameraCaptureSession.CaptureCallback() {
+                            @Override
+                            public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request,  @NonNull TotalCaptureResult result) {
+                                super.onCaptureCompleted(session, request, result);
+                                try {
+                                    startEncode();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+
+                            }
+                        }, mCameraHandler);
                     } catch (CameraAccessException e) {
                         e.printStackTrace();
                     }
                 }
-
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-
                 }
-            },mCameraHandler);
+            }, mCameraHandler);
+
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
+
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    private ImageReader.OnImageAvailableListener mOnImageAvailableListener
+            = new ImageReader.OnImageAvailableListener() {
+        /**
+         *  当有一张图片可用时会回调此方法，但有一点一定要注意：
+         *  一定要调用 reader.acquireNextImage()和close()方法，否则画面就会卡住！！！！！我被这个坑坑了好久！！！
+         *    很多人可能写Demo就在这里打一个Log，结果卡住了，或者方法不能一直被回调。
+         **/
+        @Override
+        public void onImageAvailable(ImageReader reader) {
+            Image img = reader.acquireNextImage();
+            /**
+             *  因为Camera2并没有Camera1的Priview回调！！！所以该怎么能到预览图像的byte[]呢？就是在这里了！！！我找了好久的办法！！！
+             **/
+            //Log.d(TAG, "onImageAvailable: 所谓的像素平面数组的长度"+img.getPlanes().length);
+            ByteBuffer []buffer=new ByteBuffer[img.getPlanes().length];
+            for (int i=0;i<img.getPlanes().length;i++){
+            buffer[i]= img.getPlanes()[i].getBuffer();
+            data[i] = new byte[buffer[i].remaining()];
+            buffer[i].get(data[i]);}
+            img.close();
+            //Log.d(TAG, "onImageAvailable: YUV_420_888" + Arrays.toString(data));
+
+
+        }
+    };
+
+
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
-    protected void onPause(){
+    protected void onPause() {
         super.onPause();
-        if (mCameraCaptureSession!=null){
+        if (mCameraCaptureSession != null) {
             mCameraCaptureSession.close();
-            mCameraCaptureSession=null;
+            mCameraCaptureSession = null;
         }
-        if (mCameraDevice!=null){
+        if (mCameraDevice != null) {
             mCameraDevice.close();
-            mCameraDevice=null;
+            mCameraDevice = null;
         }
 
     }
+    /**
+     * Mediacodec编码部分
+     */
+    //MediaCodec codec = MediaCodec.createByCodecName("Test");
+
+    private void startEncode() throws IOException {
+
+//        int in=encoder.input(data[0],data[0].length,System.nanoTime()/1000);
+//        Log.d(TAG, "startEncode: index"+in);
+//        Log.d(TAG, "startEncode: 编码前，像素平面一"+Arrays.toString(data[0]));
+//        Log.d(TAG, "startEncode: 编码前，像素平面二"+Arrays.toString(data[1]));
+//        Log.d(TAG, "startEncode: 编码前，像素平面三"+Arrays.toString(data[2]));
+
+        int nb=encoder.output();
+        if (nb==0)
+        Log.d(TAG, "startEncode:编码可以输出了");
+        Log.d(TAG, "startEncode: "+Arrays.toString(encoder.outputBuffers));
+
+
+
+    }
+    private void initEncoder(){
+
+        encoder=new Encoder(surfaceView2.getHolder().getSurface());
+        try {
+            encoder.init();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try{
+        encoder.configure(surfaceView.getWidth(),surfaceView.getHeight(),bitrate,framerate);
+        encoder.start();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+
+    }
+
+
 }
