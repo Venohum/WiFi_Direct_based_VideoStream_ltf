@@ -23,7 +23,7 @@ public class DeviceDetailFragment extends Fragment implements WifiP2pManager.Con
     protected static final int CHOOSE_FILE_RESULT_CODE = 20;
     private View mContentView = null;
     private WifiP2pDevice device;
-    private WifiP2pInfo info;
+    public static WifiP2pInfo info;
     ProgressDialog progressDialog = null;
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {

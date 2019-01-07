@@ -23,9 +23,13 @@ import android.media.MediaCodec;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.MediaRecorder;
+import android.net.LocalSocket;
+import android.net.wifi.p2p.WifiP2pGroup;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
@@ -40,11 +44,21 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TabHost;
 
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.VideoDecoder;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.UDP.EchoClient;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.UDP.EchoServer;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.chat.ChatActivity;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.recorder.RecordService;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct.DeviceDetailFragment;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.net.DatagramPacket;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,15 +84,21 @@ public class CameraActivity extends AppCompatActivity {
     private CameraCaptureSession mCameraCaptureSession,mCameraCaptureSession2;
     private ImageReader mImageReader;
     private Button pill;
-    private int framerate = 12;//每秒帧率
-    private int bitrate = 1500000;//编码比特率，
+    private int framerate = 24;//每秒帧率
+    private int bitrate = 1900000;//编码比特率，
+    private final String MIME_TYPE = "video/avc";
 //    private byte[] h264=new byte[width*height*3];
     private byte[][] data=new byte[3][];
     private Encoder encoder;
+    private Decoder mDecoder;
+    private boolean isfirstclick=true;
 
+    private EchoServer server;
+    //public static File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/6.h264");
 
     public CameraActivity() throws IOException {
     }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,16 +108,35 @@ public class CameraActivity extends AppCompatActivity {
         surfaceView2=(SurfaceView)findViewById(R.id.sfvSurfaceView2);
         pill=(Button)findViewById(R.id.pipi);
         pill.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onClick(View v) {
-//                for (int i=0;i<100;i++)
-                try {
-                    startEncode();
-                } catch (IOException e) {
+                Log.d(TAG, "onClick: 是组主么"+DeviceDetailFragment.info.isGroupOwner);
+                if (DeviceDetailFragment.info.isGroupOwner)
+               try{
+
+                    server=new EchoServer();
+                    new Thread(server).start();
+                    Log.d(TAG, "onClick: 这是UDP 服务端！");
+
+
+                   new Thread(new Runnable() {
+                       @Override
+                       public void run() {
+                           if (mSurfaceHolder2.getSurface()!=null){
+                               Log.d(TAG, "run: surface2"+mSurfaceHolder2.getSurface().toString());
+                           startdecode(MIME_TYPE,mSurfaceHolder2.getSurface(),16,32,server);
+                           Log.d(TAG, "run: 解码开始！");}
+                           else {
+                               Log.d(TAG, "run: surface2为空无法解码！");
+                           }
+                       }
+                   }).start();
+
+
+                }catch (Exception e){
                     e.printStackTrace();
-                }
-
-
+            }
             }
         });
 
@@ -112,10 +151,11 @@ public class CameraActivity extends AppCompatActivity {
         mSurfaceHolder2=surfaceView2.getHolder();
         surfaceView.setZOrderMediaOverlay(true);//把控件放在窗口最顶层
         surfaceView2.setZOrderMediaOverlay(true);
+        mSurfaceHolder2.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         mSurfaceHolder.setFormat(PixelFormat.TRANSLUCENT);
         mSurfaceHolder.addCallback(mSurfaceHolderCallback);
-        mSurfaceHolder2.setFormat(PixelFormat.TRANSLUCENT);
-       // mSurfaceHolder2.addCallback(mSurfaceHolderCallback);
+        mSurfaceHolder2.addCallback(mSurfaceHolderCallback1);
+
 
         Log.d(TAG, "onResume: onResume 执行了");
     }
@@ -125,7 +165,22 @@ public class CameraActivity extends AppCompatActivity {
         mCameraThread.start();
         mCameraHandler = new Handler(mCameraThread.getLooper());
     }
+    private SurfaceHolder.Callback mSurfaceHolderCallback1=new SurfaceHolder.Callback() {
+        @Override
+        public void surfaceCreated(SurfaceHolder holder) {
 
+        }
+
+        @Override
+        public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+        }
+
+        @Override
+        public void surfaceDestroyed(SurfaceHolder holder) {
+
+        }
+    };
     private SurfaceHolder.Callback mSurfaceHolderCallback = new SurfaceHolder.Callback() {
         @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         @Override
@@ -230,11 +285,14 @@ public class CameraActivity extends AppCompatActivity {
              */
             initEncoder();
             /**
+             * 初始化解码器
+             */
+
+            /**
              * 开始预览
              */
             startPreView();
-            encoder.surface=surfaceView.getHolder().getSurface();
-
+            //encoder.surface=surfaceView.getHolder().getSurface();
 
         }
 
@@ -297,6 +355,7 @@ public class CameraActivity extends AppCompatActivity {
                                 super.onCaptureCompleted(session, request, result);
                                 try {
                                     startEncode();
+
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
@@ -337,6 +396,9 @@ public class CameraActivity extends AppCompatActivity {
             buffer[i]= img.getPlanes()[i].getBuffer();
             data[i] = new byte[buffer[i].remaining()];
             buffer[i].get(data[i]);}
+//            Util.save(data[0], 0, data[0].length, file, true);
+//            Util.save(data[1], 0, data[1].length, file, true);
+//            Util.save(data[2], 0, data[2].length, file, true);
             img.close();
             //Log.d(TAG, "onImageAvailable: YUV_420_888" + Arrays.toString(data));
 
@@ -372,17 +434,47 @@ public class CameraActivity extends AppCompatActivity {
 //        Log.d(TAG, "startEncode: 编码前，像素平面二"+Arrays.toString(data[1]));
 //        Log.d(TAG, "startEncode: 编码前，像素平面三"+Arrays.toString(data[2]));
 
-        int nb=encoder.output();
-        if (nb==0)
-        Log.d(TAG, "startEncode:编码可以输出了");
-        Log.d(TAG, "startEncode: "+Arrays.toString(encoder.outputBuffers));
-
-
+         encoder.output();
+//        if (nb==0)
+//        Log.d(TAG, "startEncode:编码可以输出了");
+//        Log.d(TAG, "startEncode: "+Arrays.toString(encoder.outputBuffers));
 
     }
+
+    private void startDncode()throws Exception{
+//        int result_input=-2;
+        FileInputStream inputStream=new FileInputStream(Encoder.file);
+        byte [] inputbyte=new byte[10*1024];
+
+        if(inputStream.read(inputbyte)!=-1){
+            Log.d(TAG, "startDncode长度: "+inputbyte.length);
+            Log.d(TAG, "startDncode: 内容！"+Arrays.toString(inputbyte));
+            mDecoder.input(inputbyte,inputbyte.length,System.nanoTime()/1000);}
+            mDecoder.flush();
+//            Log.d(TAG, "startDncode: 输入失败！");
+
+        inputStream.close();
+        //Log.d(TAG, "startDncode: 正在解码！"+Arrays.toString(inputbyte));
+
+    }
+    private void startshow()throws Exception{
+        EchoServer echoServer=new EchoServer();
+
+        mDecoder.input(echoServer.packet.getData(),echoServer.packet.getData().length,System.nanoTime()/1000);
+    }
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    private void startdecode(String mimeType, Surface surface, int viewwidth, int viewheight, EchoServer echoServer){
+        VideoDecoder videoDecoder=new VideoDecoder(mimeType,surface,viewwidth,viewheight,encoder.mSps,encoder.mPps);
+        videoDecoder.setechoServer(echoServer);
+        videoDecoder.startDecoder();
+    }
+    /**
+     * 编码器初始化
+     */
+
     private void initEncoder(){
 
-        encoder=new Encoder(surfaceView2.getHolder().getSurface());
+        encoder=new Encoder();
         try {
             encoder.init();
         } catch (IOException e) {
@@ -394,8 +486,28 @@ public class CameraActivity extends AppCompatActivity {
         }catch (Exception e){
             e.printStackTrace();
         }
+        Log.d(TAG, "initEncoder: 编码器初始化完成！");
+    }
 
-
+    /**
+     * 解码器初始化
+     */
+    private void initDncoder(){
+        mDecoder=new Decoder();
+        try{
+            mDecoder.init();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+        try{
+            Log.d(TAG, "initDncoder: mSps"+Arrays.toString(encoder.mSps));
+            Log.d(TAG, "initDncoder: Pps"+Arrays.toString(encoder.mPps));
+            mDecoder.configure(encoder.mSps,encoder.mPps,mSurfaceHolder2.getSurface());
+            mDecoder.start();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        Log.d(TAG, "initDncoder: 解码器初始化完成！");
     }
 
 

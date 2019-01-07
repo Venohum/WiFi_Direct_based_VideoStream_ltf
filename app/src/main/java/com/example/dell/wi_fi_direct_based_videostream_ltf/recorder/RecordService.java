@@ -9,6 +9,7 @@ import android.media.MediaCodec;
 import android.media.MediaMuxer;
 import android.media.MediaRecorder;
 import android.media.projection.MediaProjection;
+import android.net.LocalSocket;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Environment;
@@ -112,6 +113,7 @@ public class RecordService extends Service {
     mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
     mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
     mediaRecorder.setOutputFile(getsaveDirectory() + System.currentTimeMillis() + ".mp4");
+    //mediaRecorder.setOutputFile(LocalSocket.SOCKET_STREAM);
     mediaRecorder.setVideoSize(width, height);
     mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
     mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);

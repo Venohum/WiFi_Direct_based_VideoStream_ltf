@@ -14,9 +14,9 @@ import java.net.Socket;
 import static com.example.dell.wi_fi_direct_based_videostream_ltf.chat.ChatActivity.TAG;
 
 public class ServerThread implements Runnable {
-    private Socket socket;
+//    private Socket socket;
     private String[] type;
-    private static ServerSocket serverSocket;
+    private ServerSocket serverSocket;
     public ChatActivity.MyHandler myhandler;
     protected ServerHandler serverHandler;
     private Thread serverRead;
@@ -36,15 +36,16 @@ public class ServerThread implements Runnable {
                 serverSocket=new ServerSocket(50000);
                 serverSocket.setReuseAddress(true);
             }
-
+//            Socket client;
             while(true){
-                socket=serverSocket.accept();
-                if(socket!=null){
-                Log.d(TAG,"新客户端"+socket.getInetAddress().getHostAddress());}
-               serverRead= new Thread(new ServerRead());
+                Socket client=serverSocket.accept();
+                if(client!=null){
+                Log.d(TAG,"新客户端"+client.getInetAddress().getHostAddress());}
+               serverRead= new Thread(new ServerRead(client));
                 serverRead.start();
-                serverWrite=new Thread(new ServerWrite());
+                serverWrite=new Thread(new ServerWrite(client));
                 serverWrite.start();
+
 
 
             }
@@ -52,7 +53,7 @@ public class ServerThread implements Runnable {
         }catch (IOException e){
             e.printStackTrace();
         }
-        if(socket.isClosed()){
+        if(serverSocket.isClosed()){
             serverWrite.interrupt();
             serverRead.interrupt();
         }
@@ -60,7 +61,8 @@ public class ServerThread implements Runnable {
 
     }
     class ServerRead implements Runnable{
-
+         private Socket socket;
+         ServerRead(Socket socket){this.socket=socket;}
         @Override
         public void run(){
             try{
@@ -97,6 +99,7 @@ public class ServerThread implements Runnable {
 
     static class ServerHandler extends Handler{
         private WeakReference<ServerThread>mserverthread;
+        private Socket socket;
 
         @Override
         public void handleMessage(Message msg) {
@@ -113,7 +116,7 @@ public class ServerThread implements Runnable {
                 default:
                     break;
             }try{
-                DataOutputStream stream=new DataOutputStream(serverThread.socket.getOutputStream());
+                DataOutputStream stream=new DataOutputStream(socket.getOutputStream());
                 Log.d(TAG, "ServerWrite: 组主写入message开始！");
                 if (message!=null)
                     stream.writeUTF(message);
@@ -122,16 +125,19 @@ public class ServerThread implements Runnable {
                 e.printStackTrace();
             }
         }
-        ServerHandler(ServerThread serverThread){
+        ServerHandler(ServerThread serverThread,Socket socket){
             mserverthread=new WeakReference<ServerThread>(serverThread);
+            this.socket=socket;
 
         }
     }
     class ServerWrite implements Runnable{
+         Socket socket;
+         ServerWrite(Socket socket){this.socket=socket;}
         @Override
         public void run(){
             Looper.prepare();
-            serverHandler=new ServerHandler(ServerThread.this);
+            serverHandler=new ServerHandler(ServerThread.this,socket);
             Looper.loop();
         }
     }

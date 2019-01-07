@@ -140,25 +140,25 @@ public class ChatActivity extends AppCompatActivity {
         /**
          * 利用handler实现线程之间消息传递，socket连接，流传输等等
          */
-        type=new String[2];
-        if (isgroupowner&&serverThread==null){
-            type[0]="group_owner";
-        serverThread=new ServerThread(type,myHandler);
-       thread_server= new Thread(serverThread);
-               thread_server.start();
-            Log.d(ChatActivity.TAG,"线程第一次被创建");
-
-        }
-        /**
-         *
-         */
-        if (!isgroupowner&&clientThread==null){
-            //type[0]="group_client";
-            type[0]="group_client";
-        clientThread=new ClientThread(type,myHandler);
-        thread_client=new Thread(clientThread);
-        thread_client.start();
-        }
+//        type=new String[2];
+//        if (isgroupowner&&serverThread==null){
+//            type[0]="group_owner";
+//        serverThread=new ServerThread(type,myHandler);
+//       thread_server= new Thread(serverThread);
+//               thread_server.start();
+//            Log.d(ChatActivity.TAG,"线程第一次被创建");
+//
+//        }
+//        /**
+//         *
+//         */
+//        if (!isgroupowner&&clientThread==null){
+//            //type[0]="group_client";
+//            type[0]="group_client";
+//        clientThread=new ClientThread(type,myHandler);
+//        thread_client=new Thread(clientThread);
+//        thread_client.start();
+//        }
 
 /**
  * 测试使用SurfaceView播放视频
@@ -485,23 +485,21 @@ public class ChatActivity extends AppCompatActivity {
         if (thread!=null){
         thread.interrupt();
         thread=null;}
-        if (camera!=null){
-//            camera.release();
-        }
-        if (!isgroupowner)
-            if (thread_client.isAlive()){
-                //thread_client.interrupt();
-                thread_client.stop();
-                Log.d(TAG, "onDestroy:"+thread_client.getName()+" 组员线程中断");
-            }
-        if (isgroupowner)
-            if (thread_server.isAlive()){
-                thread_server.interrupt();
-                Log.d(TAG, "onDestroy:"+thread_server.getName()+" 组主线程中断");
-            }
-            else{
-                Log.d(TAG, "onDestroy: 组主线程早已切断！");
-            }
+//
+//        if (!isgroupowner)
+//            if (thread_client.isAlive()){
+//                //thread_client.interrupt();
+//                thread_client.stop();
+//                Log.d(TAG, "onDestroy:"+thread_client.getName()+" 组员线程中断");
+//            }
+//        if (isgroupowner)
+//            if (thread_server.isAlive()){
+//                thread_server.interrupt();
+//                Log.d(TAG, "onDestroy:"+thread_server.getName()+" 组主线程中断");
+//            }
+//            else{
+//                Log.d(TAG, "onDestroy: 组主线程早已切断！");
+//            }
 
         
         
