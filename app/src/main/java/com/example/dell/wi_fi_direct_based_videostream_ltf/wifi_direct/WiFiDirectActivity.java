@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pGroup;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -227,9 +228,11 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
 
         });
     }
+
     @Override
     public void createGroup(){//这是DeviceActionListener接口中的一个方法
         manager.createGroup(channel, new WifiP2pManager.ActionListener() {
+
             @Override
             public void onSuccess() {
                 Toast.makeText(WiFiDirectActivity.this, "Create group successfully!", Toast.LENGTH_SHORT).show();
@@ -249,8 +252,9 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
                     }, 3000);
                 }
             }
-        });
 
+
+        });
     }
 
     @Override

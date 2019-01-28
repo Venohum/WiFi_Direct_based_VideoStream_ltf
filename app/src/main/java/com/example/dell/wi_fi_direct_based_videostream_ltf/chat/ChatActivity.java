@@ -66,7 +66,7 @@ public class ChatActivity extends AppCompatActivity {
     ServerThread serverThread=null;
    Boolean bool=true;
    Boolean isgroupowner;
-    public static final String TAG = "ChatAcyivity";
+    public static final String TAG = "ChatActivity";
     private static final int RECORD_REQUEST_CODE  = 101;
     private static final int STORAGE_REQUEST_CODE = 102;
     private static final int AUDIO_REQUEST_CODE   = 103;
@@ -178,7 +178,7 @@ public class ChatActivity extends AppCompatActivity {
         stop.setOnClickListener(click);
         replay.setOnClickListener(click);
         //btn_sedm.setOnClickListener(click);
-        sv.getHolder().addCallback(callback);
+        sv.getHolder().addCallback(callback2);
         seekBar.setOnSeekBarChangeListener(change);
 /**
  * 发送消息按钮的监听事件
@@ -215,16 +215,22 @@ public class ChatActivity extends AppCompatActivity {
             @TargetApi(Build.VERSION_CODES.LOLLIPOP)
             @Override
             public void onClick(View v) {
-                if (recordService.isRunning()) {
-                    recordService.stopRecord();
-                    startBtn.setText(R.string.start_record);
-                } else {
-                    Intent captureIntent = projectionManager.createScreenCaptureIntent();
-                    /**
-                     * 用该方法启动活动，可以将结果返回到OnActivityResult()方法中
-                     */
-                    startActivityForResult(captureIntent, RECORD_REQUEST_CODE);
+                try{
+                    if (recordService.isRunning()) {
+                        //recordService.stopRecord();
+                        Log.d(TAG, "onClick: 点击了录制屏幕按钮！");
+                        startBtn.setText(R.string.start_record);
+                    } else {
+                        Intent captureIntent = projectionManager.createScreenCaptureIntent();
+                        /**
+                         * 用该方法启动活动，可以将结果返回到OnActivityResult()方法中
+                         */
+                        startActivityForResult(captureIntent, RECORD_REQUEST_CODE);
 
+                    }
+                }
+                catch (Exception e){
+                    e.printStackTrace();
                 }
             }
         });
@@ -297,6 +303,25 @@ public class ChatActivity extends AppCompatActivity {
                 currentPostition =mediaPlayer.getCurrentPosition();
                 mediaPlayer.stop();
             }
+
+        }
+    };
+    /**
+     * 这是个新的callback2
+     */
+    private SurfaceHolder.Callback callback2=new SurfaceHolder.Callback() {
+        @Override
+        public void surfaceCreated(SurfaceHolder holder) {
+
+        }
+
+        @Override
+        public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+        }
+
+        @Override
+        public void surfaceDestroyed(SurfaceHolder holder) {
 
         }
     };
@@ -538,7 +563,7 @@ public class ChatActivity extends AppCompatActivity {
             getWindowManager().getDefaultDisplay().getMetrics(metrics);
             RecordService.RecordBinder binder = (RecordService.RecordBinder) service;
             recordService = binder.getRecordService();
-            recordService.setConfig(metrics.widthPixels, metrics.heightPixels, metrics.densityDpi);
+            recordService.setConfig(metrics.widthPixels, metrics.heightPixels, metrics.densityDpi,sv.getHolder().getSurface());//修改了这里
             startBtn.setEnabled(true);
             startBtn.setText(recordService.isRunning() ? R.string.stop_record : R.string.start_record);
         }

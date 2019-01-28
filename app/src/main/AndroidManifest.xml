@@ -12,6 +12,8 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
+
 
     <uses-feature
         android:name="android.hardware.wifi.direct"
@@ -19,10 +21,8 @@
     <uses-feature android:name="android.hardware.camera2.full"
         android:required="true"/>
 
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />>
-    <uses-sdk
-        android:targetSdkVersion="28"
-        tools:ignore="GradleOverrides" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-sdk tools:ignore="GradleOverrides" />
 
     <application
         android:allowBackup="true"

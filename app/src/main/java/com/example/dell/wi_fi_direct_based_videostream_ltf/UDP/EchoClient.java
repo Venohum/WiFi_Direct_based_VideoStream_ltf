@@ -1,20 +1,44 @@
 package com.example.dell.wi_fi_direct_based_videostream_ltf.UDP;
 
-import java.io.DataOutputStream;
+import android.content.Context;
+import android.util.Log;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.util.Enumeration;
+
+import static com.example.dell.wi_fi_direct_based_videostream_ltf.Camera.CameraActivity.TAG;
 
 public class EchoClient {
     private DatagramSocket socket;
+    private MulticastSocket multicastSocket;
     private InetAddress address;
     private byte[] buf;
 
-    public EchoClient(){
+    public EchoClient(String ipaddress){
         try {
             socket=new DatagramSocket();
-            address=InetAddress.getByName("192.168.49.1");
+            address=InetAddress.getByName(ipaddress);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    public EchoClient(String ipaddress,boolean setnetworkInterFace){
+        try {
+            socket=new DatagramSocket();
+            address= InetAddress.getByName(ipaddress);
+            InetAddress inetAddress =InetAddress.getLocalHost();
+            Log.d(TAG, "EchoClient:主机名是 "+inetAddress.getHostName());
+            if (setnetworkInterFace)
+                socket.bind(new InetSocketAddress(InetAddress.getByName("192.168.49.99"),4448));
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -50,10 +74,10 @@ public class EchoClient {
     }
     public void sendStream_n (byte[]buf,int length)throws IOException {
 
-
         DatagramPacket datagramPacket=new DatagramPacket(buf,length,address,4448);
         socket.send(datagramPacket);
     }
+
     public void close(){
         socket.close();
 

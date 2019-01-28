@@ -1,11 +1,8 @@
 package com.example.dell.wi_fi_direct_based_videostream_ltf.Camera;
 
 import android.Manifest;
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Camera;
-import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -16,20 +13,11 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.CamcorderProfile;
 import android.media.Image;
 import android.media.ImageReader;
-import android.media.MediaCodec;
-import android.media.MediaCodecList;
-import android.media.MediaFormat;
-import android.media.MediaRecorder;
-import android.net.LocalSocket;
-import android.net.wifi.p2p.WifiP2pGroup;
 import android.os.Build;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
@@ -42,23 +30,18 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TabHost;
 
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.AsyncEncoder;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.Synchronization.Decoder;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.Synchronization.Encoder;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.VideoDecoder;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Multicast.MulticastServer;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
-import com.example.dell.wi_fi_direct_based_videostream_ltf.UDP.EchoClient;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.UDP.EchoServer;
-import com.example.dell.wi_fi_direct_based_videostream_ltf.chat.ChatActivity;
-import com.example.dell.wi_fi_direct_based_videostream_ltf.recorder.RecordService;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct.DeviceDetailFragment;
 
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.net.DatagramPacket;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -89,9 +72,11 @@ public class CameraActivity extends AppCompatActivity {
     private final String MIME_TYPE = "video/avc";
 //    private byte[] h264=new byte[width*height*3];
     private byte[][] data=new byte[3][];
+    private byte[] buf={0,2,3};
     private Encoder encoder;
     private Decoder mDecoder;
-    private boolean isfirstclick=true;
+    private AsyncEncoder asyncEncoder;
+    private MulticastServer multicastServer;
 
     private EchoServer server;
     //public static File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/6.h264");
@@ -112,11 +97,13 @@ public class CameraActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "onClick: 是组主么"+DeviceDetailFragment.info.isGroupOwner);
-                if (DeviceDetailFragment.info.isGroupOwner)
+//                if (DeviceDetailFragment.info.isGroupOwner)
                try{
 
                     server=new EchoServer();
                     new Thread(server).start();
+                    multicastServer=new MulticastServer();
+                    new Thread(multicastServer).start();
                     Log.d(TAG, "onClick: 这是UDP 服务端！");
 
 
@@ -125,14 +112,13 @@ public class CameraActivity extends AppCompatActivity {
                        public void run() {
                            if (mSurfaceHolder2.getSurface()!=null){
                                Log.d(TAG, "run: surface2"+mSurfaceHolder2.getSurface().toString());
-                           startdecode(MIME_TYPE,mSurfaceHolder2.getSurface(),16,32,server);
+                           startdecode(MIME_TYPE,mSurfaceHolder2.getSurface(),16,32,server,multicastServer);
                            Log.d(TAG, "run: 解码开始！");}
                            else {
                                Log.d(TAG, "run: surface2为空无法解码！");
                            }
                        }
                    }).start();
-
 
                 }catch (Exception e){
                     e.printStackTrace();
@@ -142,7 +128,6 @@ public class CameraActivity extends AppCompatActivity {
 
         Log.d(TAG, "onCreate: onCreat执行了！");
     }
-
     @Override
     protected void onResume() {
         super.onResume();
@@ -277,17 +262,18 @@ public class CameraActivity extends AppCompatActivity {
      *
      */
     private CameraDevice.StateCallback mCameraDeviceStateCallback = new CameraDevice.StateCallback() {
+        @RequiresApi(api = Build.VERSION_CODES.M)
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
             mCameraDevice = camera;
             /**
-             * 初始化编码器
+             * 初始化编码器——同步方式
              */
-            initEncoder();
+            //initEncoder();
             /**
-             * 初始化解码器
+             * 初始化编码器_异步方式
              */
-
+            initAsyncEncoder("video/avc",720,480);
             /**
              * 开始预览
              */
@@ -323,16 +309,16 @@ public class CameraActivity extends AppCompatActivity {
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private void startPreView() {
         try {
-            mImageReader = ImageReader.newInstance(surfaceView.getWidth(), surfaceView.getHeight(), ImageFormat.YUV_420_888, 2);
-            mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mCameraHandler);
+//            mImageReader = ImageReader.newInstance(surfaceView.getWidth(), surfaceView.getHeight(), ImageFormat.YUV_420_888, 2);
+//            mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mCameraHandler);
             Surface surface = mSurfaceHolder.getSurface();
             mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);//视频帧率有区别
             if (surface != null) {
                 Log.d(TAG, "SURFACE不为空");
 
                 mCaptureRequestBuilder.addTarget(surface);//用于显示在SurfaceView中预览
-                mCaptureRequestBuilder.addTarget(mImageReader.getSurface());//用于ImageReader获取数据
-                mCaptureRequestBuilder.addTarget(encoder.surface);
+//                mCaptureRequestBuilder.addTarget(mImageReader.getSurface());//用于ImageReader获取数据
+                mCaptureRequestBuilder.addTarget(asyncEncoder.mSurface);
 
             } else {
                 Log.d(TAG, "SURFACE为空");
@@ -340,10 +326,10 @@ public class CameraActivity extends AppCompatActivity {
             /**
              *注意，以下参数列表中有两个surface，其中分别为SurfaceView的
              * 以及用来获取byte[]的ImageReader的surface
-             *,encoder.surface
              *
+             *mImageReader.getSurface()
              */
-            mCameraDevice.createCaptureSession(Arrays.asList(surface,mImageReader.getSurface(),encoder.surface), new CameraCaptureSession.StateCallback() {
+            mCameraDevice.createCaptureSession(Arrays.asList(surface,asyncEncoder.mSurface), new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
                     mCaptureRequest = mCaptureRequestBuilder.build();
@@ -353,12 +339,12 @@ public class CameraActivity extends AppCompatActivity {
                             @Override
                             public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request,  @NonNull TotalCaptureResult result) {
                                 super.onCaptureCompleted(session, request, result);
-                                try {
-                                    startEncode();
-
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
+//                                try {
+//                                    startEncode();
+//
+//                                } catch (IOException e) {
+//                                    e.printStackTrace();
+//                                }
 
                             }
                         }, mCameraHandler);
@@ -391,6 +377,8 @@ public class CameraActivity extends AppCompatActivity {
              *  因为Camera2并没有Camera1的Priview回调！！！所以该怎么能到预览图像的byte[]呢？就是在这里了！！！我找了好久的办法！！！
              **/
             //Log.d(TAG, "onImageAvailable: 所谓的像素平面数组的长度"+img.getPlanes().length);
+
+
             ByteBuffer []buffer=new ByteBuffer[img.getPlanes().length];
             for (int i=0;i<img.getPlanes().length;i++){
             buffer[i]= img.getPlanes()[i].getBuffer();
@@ -405,7 +393,6 @@ public class CameraActivity extends AppCompatActivity {
 
         }
     };
-
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
@@ -425,9 +412,7 @@ public class CameraActivity extends AppCompatActivity {
      * Mediacodec编码部分
      */
     //MediaCodec codec = MediaCodec.createByCodecName("Test");
-
     private void startEncode() throws IOException {
-
 //        int in=encoder.input(data[0],data[0].length,System.nanoTime()/1000);
 //        Log.d(TAG, "startEncode: index"+in);
 //        Log.d(TAG, "startEncode: 编码前，像素平面一"+Arrays.toString(data[0]));
@@ -454,8 +439,6 @@ public class CameraActivity extends AppCompatActivity {
 //            Log.d(TAG, "startDncode: 输入失败！");
 
         inputStream.close();
-        //Log.d(TAG, "startDncode: 正在解码！"+Arrays.toString(inputbyte));
-
     }
     private void startshow()throws Exception{
         EchoServer echoServer=new EchoServer();
@@ -463,13 +446,15 @@ public class CameraActivity extends AppCompatActivity {
         mDecoder.input(echoServer.packet.getData(),echoServer.packet.getData().length,System.nanoTime()/1000);
     }
     @RequiresApi(api = Build.VERSION_CODES.M)
-    private void startdecode(String mimeType, Surface surface, int viewwidth, int viewheight, EchoServer echoServer){
-        VideoDecoder videoDecoder=new VideoDecoder(mimeType,surface,viewwidth,viewheight,encoder.mSps,encoder.mPps);
-        videoDecoder.setechoServer(echoServer);
+    private void startdecode(String mimeType, Surface surface, int viewwidth, int viewheight, EchoServer echoServer,MulticastServer multicastServer){
+        VideoDecoder videoDecoder=new VideoDecoder(mimeType,surface,viewwidth,viewheight);
+//        Log.d(TAG, "startdecode: sps"+Arrays.toString(encoder.mSps));
+//        Log.d(TAG, "startdecode: pps"+Arrays.toString(encoder.mPps));
+        videoDecoder.setechoServer(echoServer,multicastServer);
         videoDecoder.startDecoder();
     }
     /**
-     * 编码器初始化
+     * 编码器初始化_同步方式
      */
 
     private void initEncoder(){
@@ -487,6 +472,12 @@ public class CameraActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         Log.d(TAG, "initEncoder: 编码器初始化完成！");
+    }
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    private void initAsyncEncoder(String MIME_TYPE, int with, int hight){
+        asyncEncoder=new AsyncEncoder(MIME_TYPE,with,hight);
+        asyncEncoder.startEncoder();
+
     }
 
     /**

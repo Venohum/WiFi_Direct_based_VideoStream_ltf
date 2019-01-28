@@ -1,17 +1,16 @@
-package com.example.dell.wi_fi_direct_based_videostream_ltf.Camera;
+package com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.Synchronization;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
-import android.os.Environment;
 import android.util.Log;
 import android.view.Surface;
+
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Camera.H264SPSPaser;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;

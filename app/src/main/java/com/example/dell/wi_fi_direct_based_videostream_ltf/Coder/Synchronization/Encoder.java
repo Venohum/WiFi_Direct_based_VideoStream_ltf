@@ -1,4 +1,4 @@
-package com.example.dell.wi_fi_direct_based_videostream_ltf.Camera;
+package com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.Synchronization;
 import android.media.MediaCodec;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
@@ -47,12 +47,10 @@ public class Encoder {
         public ByteBuffer[] outputBuffers;
         private long BUFFER_TIMEOUT = 2000;
 //        private MediaCodec.BufferInfo mBI;
-        protected Surface surface;
+        public Surface surface;
         public  byte[] mPpsSps;
         public  byte[] mSps;
         public  byte[] mPps;
-        private EchoClient echoClient=new EchoClient();
-
         private boolean isgroupowner=DeviceDetailFragment.info.isGroupOwner;
         public static File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/5.h264");
 
@@ -152,7 +150,7 @@ public class Encoder {
         /**
          * 输出编码后的数据
          */
-        int output(){
+        public int output(){
 
             MediaCodec.BufferInfo mBI=new MediaCodec.BufferInfo();
             try{
@@ -185,11 +183,12 @@ public class Encoder {
                     System.arraycopy(data, 0, iframeData, mPpsSps.length, data.length);
                     data = iframeData;
                 }
-                Util.save(data, 0, data.length, file, true);
-                if (!isgroupowner){
-                echoClient.sendStream_n(data,data.length);
-
-                }
+//                Util.save(data, 0, data.length, file, true);
+                Log.d("ChatAcyivity", "output: "+Arrays.toString(data));
+//                if (!isgroupowner){
+//                echoClient.sendStream_n(data,data.length);
+//
+//                }
 
                     mMC.releaseOutputBuffer(i,false);
                     i=mMC.dequeueOutputBuffer(mBI,0);

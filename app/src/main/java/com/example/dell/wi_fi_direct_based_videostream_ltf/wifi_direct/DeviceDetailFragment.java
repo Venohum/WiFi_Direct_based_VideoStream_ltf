@@ -19,7 +19,11 @@ import android.widget.TextView;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.chat.ChatActivity;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 public class DeviceDetailFragment extends Fragment implements WifiP2pManager.ConnectionInfoListener {
+    private static final String TAG=DeviceDetailFragment.class.getSimpleName();
     protected static final int CHOOSE_FILE_RESULT_CODE = 20;
     private View mContentView = null;
     private WifiP2pDevice device;
@@ -80,7 +84,7 @@ public class DeviceDetailFragment extends Fragment implements WifiP2pManager.Con
 //                        startActivityForResult(intent, CHOOSE_FILE_RESULT_CODE);
                         Intent intent=new Intent(getActivity(),ChatActivity.class);
                         boolean data=info.isGroupOwner;
-                        Log.d("ChatAcyivity", "是组主么66666666"+data);
+                        Log.d(TAG, "是组主么66666666"+data);
                         intent.putExtra("ChatActivity",data);
                         startActivity(intent);
                     }
@@ -123,4 +127,5 @@ public class DeviceDetailFragment extends Fragment implements WifiP2pManager.Con
          this.info = info;
          this.getView().setVisibility(View.VISIBLE);
      }
+
 }

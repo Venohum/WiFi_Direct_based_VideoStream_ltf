@@ -3,38 +3,25 @@ package com.example.dell.wi_fi_direct_based_videostream_ltf.UDP;
 import android.os.Environment;
 import android.os.Looper;
 import android.util.Log;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
-
-import com.example.dell.wi_fi_direct_based_videostream_ltf.Camera.Decoder;
-import com.example.dell.wi_fi_direct_based_videostream_ltf.Camera.Encoder;
-import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
-import com.googlecode.javacv.FrameGrabber;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.SocketException;
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import static com.example.dell.wi_fi_direct_based_videostream_ltf.Camera.CameraActivity.TAG;
 
 public class EchoServer implements Runnable {
+    private EchoClient echoClient_multist=new EchoClient("192.168.49.166");
 
     private DatagramSocket socket;
     private boolean running;
     private byte[]buf=new byte[1024*40];
     private FileOutputStream fileOutputStream;
-    private Decoder mDecoder;
-    private Encoder encoder;
     public DatagramPacket packet;
     private final static int CACHE_BUFFER_SIZE=8;//定义队列大小
     private final static ArrayBlockingQueue<byte[]>mInputDataQueue=new ArrayBlockingQueue<byte[]>(CACHE_BUFFER_SIZE);
@@ -42,14 +29,14 @@ public class EchoServer implements Runnable {
     public EchoServer(){
         try {
             socket=new DatagramSocket(4448);
+
         }catch (SocketException e){
             e.printStackTrace();
         }
-
     }
     @Override
     public void run() {
-
+        int packet_number=0;
         Looper.prepare();
         try  {
             fileOutputStream = new FileOutputStream(new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/999.h264"));
@@ -61,9 +48,13 @@ public class EchoServer implements Runnable {
              packet=new DatagramPacket(buf,buf.length);
             try {
                 socket.receive(packet);
+                packet_number++;
+//                Log.d(TAG, "runEchoServer: "+Arrays.toString(packet.getData()));
+//                echoClient_multist.sendStream_n(packet.getData(),packet.getData().length);
                 byte[]temp=new byte[packet.getLength()];
                 System.arraycopy(packet.getData(),0,temp,0,packet.getLength());
                 mInputDataQueue.offer(temp);
+                    Log.d(TAG, "run: 接收到了"+packet_number);
 //                Log.d(TAG, "run: "+temp.length+"长"+Arrays.toString(mInputDataQueue.poll()));
 //                fileOutputStream.write(temp);
             } catch (IOException e) {

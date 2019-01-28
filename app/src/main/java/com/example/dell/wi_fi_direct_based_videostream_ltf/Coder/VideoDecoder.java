@@ -5,13 +5,14 @@ import android.media.MediaFormat;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.util.Log;
 import android.view.Surface;
 
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Multicast.MulticastServer;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.UDP.EchoServer;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Multicast.MulticastClient;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -30,9 +31,11 @@ public class VideoDecoder {
     private Surface     mSurface;
     private int         mViewWidth;
     private int         mViewHeight;
+    private int number=0;
     private Handler mVideoDecoderHandler;
     private HandlerThread mVideoDecoderHandlerThread = new HandlerThread("VideoDecoder");
     private EchoServer echoServer;
+    private MulticastServer multicastServer;
 
     private MediaCodec.Callback mCallback = new MediaCodec.Callback() {
         @Override
@@ -44,14 +47,17 @@ public class VideoDecoder {
 //            if(true) {
 //                dataSources = mVideoEncoder.pollFrameFromEncoder();
                 dataSources=echoServer.pollFramedata();
-                if (dataSources!=null)
-                Log.d(TAG, "onInputBufferAvailable: 解码器缓冲区可以用了！"+Arrays.toString(dataSources));
+//            dataSources=multicastServer.pollFramedata();
+//                if (dataSources!=null)
+//                Log.d(TAG, "onInputBufferAvailable: 解码器缓冲区可以用了！"+Arrays.toString(dataSources));
 
 //            }
             int length = 0;
             if(dataSources != null) {
                 inputBuffer.put(dataSources);
                 length = dataSources.length;
+//                number++;
+//                Log.d(TAG, "onInputBufferAvailable:接收到了 "+number);
             }
             mediaCodec.queueInputBuffer(id,0, length,System.nanoTime()/1000,0);
         }
@@ -63,7 +69,7 @@ public class VideoDecoder {
             if(mMediaFormat == outputFormat && outputBuffer != null && bufferInfo.size > 0){
                 byte [] buffer = new byte[outputBuffer.remaining()];
                 outputBuffer.get(buffer);
-                Log.d(TAG, "onOutputBufferAvailable: 解码器缓冲区可以用了！");
+//                Log.d(TAG, "onOutputBufferAvailable: 解码器缓冲区可以用了！");
             }
             mMediaCodec.releaseOutputBuffer(id, true);
         }
@@ -81,7 +87,9 @@ public class VideoDecoder {
 
 
 
-    public VideoDecoder(String mimeType, Surface surface, int viewwidth, int viewheight,byte[] sps,byte[] pps){
+    public VideoDecoder(String mimeType, Surface surface, int viewwidth, int viewheight
+//            ,byte[] sps,byte[] pps
+    ){
         try {
             mMediaCodec = MediaCodec.createDecoderByType(mimeType);
         } catch (IOException e) {
@@ -107,14 +115,16 @@ public class VideoDecoder {
         mMediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
         mMediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE,16*32);
         mMediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
+        try {
+//            mMediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(sps));
+//            mMediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(pps));
+        }catch (Exception e){e.printStackTrace();}
 
-        mMediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(sps));
-        mMediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(pps));
     }
 
-    public void setechoServer(EchoServer echoServer){
+    public void setechoServer(EchoServer echoServer,MulticastServer multicastServer){
         this.echoServer=echoServer;
-
+        this.multicastServer=multicastServer;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
