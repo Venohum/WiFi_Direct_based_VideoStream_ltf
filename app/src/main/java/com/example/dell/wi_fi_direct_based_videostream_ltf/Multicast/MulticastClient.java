@@ -27,6 +27,9 @@ public class MulticastClient {
             Log.d(TAG, "MulticastClient: 我想看看这是谁的IP"+getIP());
 //            multicastSocket.setNetworkInterface(NetworkInterface.getByInetAddress(InetAddress.getByName(getIP())));
             multicastSocket.joinGroup(new InetSocketAddress(InetAddress.getByName("224.0.0.1"),port),NetworkInterface.getByName(getIP()));
+
+
+
         }catch (Exception e){
             e.printStackTrace();
         }
