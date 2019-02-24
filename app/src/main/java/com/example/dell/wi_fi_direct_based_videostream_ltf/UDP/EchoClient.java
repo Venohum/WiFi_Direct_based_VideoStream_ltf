@@ -22,7 +22,7 @@ public class EchoClient {
     private MulticastSocket multicastSocket;
     private InetAddress address;
     private byte[] buf;
-
+//
     public EchoClient(String ipaddress){
         try {
             socket=new DatagramSocket();
@@ -33,12 +33,13 @@ public class EchoClient {
     }
     public EchoClient(String ipaddress,boolean setnetworkInterFace){
         try {
-            socket=new DatagramSocket();
+            socket=new DatagramSocket(null);
             address= InetAddress.getByName(ipaddress);
             InetAddress inetAddress =InetAddress.getLocalHost();
-            Log.d(TAG, "EchoClient:主机名是 "+inetAddress.getHostName());
-            if (setnetworkInterFace)
+            Log.d(TAG, "EchoClient:主机名是 "+inetAddress.getHostName()+"是否绑定了"+socket.isBound()+"shifo"+socket.isClosed());
+            if (setnetworkInterFace){
                 socket.bind(new InetSocketAddress(InetAddress.getByName("192.168.49.99"),4448));
+            Log.d(TAG, "EchoClient: 执行了绑定过程！"+socket.isClosed());}
         }catch (Exception e){
             e.printStackTrace();
         }

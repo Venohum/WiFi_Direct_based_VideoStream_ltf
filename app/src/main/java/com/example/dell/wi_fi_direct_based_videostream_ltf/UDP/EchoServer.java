@@ -4,6 +4,8 @@ import android.os.Environment;
 import android.os.Looper;
 import android.util.Log;
 
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Multicast.MulticastClient;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -16,9 +18,11 @@ import java.util.concurrent.ArrayBlockingQueue;
 import static com.example.dell.wi_fi_direct_based_videostream_ltf.Camera.CameraActivity.TAG;
 
 public class EchoServer implements Runnable {
-    private EchoClient echoClient_multist=new EchoClient("192.168.49.166");
-
+//    private EchoClient echoClient_multist=new EchoClient("192.168.49.166");
+    private EchoClient echoClient=new EchoClient("192.168.49.166");
+    private MulticastClient multicastClient=new MulticastClient();
     private DatagramSocket socket;
+
     private boolean running;
     private byte[]buf=new byte[1024*40];
     private FileOutputStream fileOutputStream;
@@ -48,13 +52,17 @@ public class EchoServer implements Runnable {
              packet=new DatagramPacket(buf,buf.length);
             try {
                 socket.receive(packet);
+//                multicastClient.sendmessage(packet.getData(),packet.getLength());
+                //echoClient.sendStream_n(packet.getData(), packet.getLength());
+                //测试丢包专用
                 packet_number++;
-//                Log.d(TAG, "runEchoServer: "+Arrays.toString(packet.getData()));
+                Log.d(TAG, " "+packet_number+"runEchoServer: "+Arrays.toString(packet.getData()));
 //                echoClient_multist.sendStream_n(packet.getData(),packet.getData().length);
                 byte[]temp=new byte[packet.getLength()];
                 System.arraycopy(packet.getData(),0,temp,0,packet.getLength());
                 mInputDataQueue.offer(temp);
-                    Log.d(TAG, "run: 接收到了"+packet_number);
+                //测试丢包专用
+//                    Log.d(TAG, "run: 接收到了"+packet_number);
 //                Log.d(TAG, "run: "+temp.length+"长"+Arrays.toString(mInputDataQueue.poll()));
 //                fileOutputStream.write(temp);
             } catch (IOException e) {

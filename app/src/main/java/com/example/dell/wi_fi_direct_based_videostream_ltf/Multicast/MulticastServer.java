@@ -3,6 +3,8 @@ package com.example.dell.wi_fi_direct_based_videostream_ltf.Multicast;
 import android.os.Looper;
 import android.util.Log;
 
+import com.example.dell.wi_fi_direct_based_videostream_ltf.UDP.EchoClient;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -20,6 +22,7 @@ import static com.example.dell.wi_fi_direct_based_videostream_ltf.Camera.CameraA
 
 public class MulticastServer implements Runnable {
 
+    private int packet_number=0;
     private DatagramSocket socket;
     private MulticastSocket multicastSocket;
     private boolean running;
@@ -49,7 +52,9 @@ public class MulticastServer implements Runnable {
             packet=new DatagramPacket(buf,buf.length);
             try {
                 multicastSocket.receive(packet);
-                Log.d(TAG, "runMulticast: "+Arrays.toString(packet.getData()));
+//                new EchoClient("192.168.49.28").sendStream_n(packet.getData(),packet.getLength());
+                packet_number++;
+                Log.d(TAG, " "+packet_number+"runMulticast: "+Arrays.toString(packet.getData()));
                 byte[]temp=new byte[packet.getLength()];
                 System.arraycopy(packet.getData(),0,temp,0,packet.getLength());
                 mInputDataQueue.offer(temp);//数据进队
