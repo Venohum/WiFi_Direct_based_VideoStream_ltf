@@ -13,8 +13,8 @@
 
     <SurfaceView
         android:id="@+id/sfvSurfaceView"
-        android:layout_width="240dp"
-        android:layout_height="160dp" />
+        android:layout_width="match_parent"
+        android:layout_height="210dp" />
 
     <TextView
         android:id="@+id/textView"
@@ -24,8 +24,8 @@
 
     <SurfaceView
         android:id="@+id/sfvSurfaceView2"
-        android:layout_width="240dp"
-        android:layout_height="160dp" />
+        android:layout_width="match_parent"
+        android:layout_height="210dp" />
     <Button
         android:id="@+id/pipi"
         android:layout_width="match_parent"

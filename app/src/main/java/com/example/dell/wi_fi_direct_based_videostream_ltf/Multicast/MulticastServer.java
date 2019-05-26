@@ -52,7 +52,7 @@ public class MulticastServer implements Runnable {
             packet=new DatagramPacket(buf,buf.length);
             try {
                 multicastSocket.receive(packet);
-//                new EchoClient("192.168.49.28").sendStream_n(packet.getData(),packet.getLength());
+//                new EchoClient("192.168.49.125").sendStream_n(packet.getData(),packet.getLength());
                 packet_number++;
                 Log.d(TAG, " "+packet_number+"runMulticast: "+Arrays.toString(packet.getData()));
                 byte[]temp=new byte[packet.getLength()];

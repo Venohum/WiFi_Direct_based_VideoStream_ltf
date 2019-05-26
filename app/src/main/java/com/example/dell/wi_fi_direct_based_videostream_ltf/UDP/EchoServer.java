@@ -19,7 +19,7 @@ import static com.example.dell.wi_fi_direct_based_videostream_ltf.Camera.CameraA
 
 public class EchoServer implements Runnable {
 //    private EchoClient echoClient_multist=new EchoClient("192.168.49.166");
-    private EchoClient echoClient=new EchoClient("192.168.49.166");
+    private EchoClient echoClient=new EchoClient("192.168.49.28");
     private MulticastClient multicastClient=new MulticastClient();
     private DatagramSocket socket;
 
@@ -53,7 +53,7 @@ public class EchoServer implements Runnable {
             try {
                 socket.receive(packet);
 //                multicastClient.sendmessage(packet.getData(),packet.getLength());
-                //echoClient.sendStream_n(packet.getData(), packet.getLength());
+//                echoClient.sendStream_n(packet.getData(), packet.getLength());
                 //测试丢包专用
                 packet_number++;
                 Log.d(TAG, " "+packet_number+"runEchoServer: "+Arrays.toString(packet.getData()));

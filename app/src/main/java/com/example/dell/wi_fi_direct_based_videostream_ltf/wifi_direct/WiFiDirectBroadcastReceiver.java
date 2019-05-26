@@ -9,6 +9,8 @@ import android.net.wifi.p2p.WifiP2pGroup;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Algorithmic.ParametersCollection;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
 
 import static com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct.WiFiDirectActivity.TAG;
@@ -83,6 +85,8 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                       Log.d(TAG, "onGroupInfoAvailable: ");
                       if (group!=null){
                           Log.d(TAG, "onGroupInfoAvailable: "+group.getPassphrase());
+                          activity.setSSID(group.getNetworkName());
+                          new Thread(new ParametersCollection(activity)).start();
                       }
                   }
               });

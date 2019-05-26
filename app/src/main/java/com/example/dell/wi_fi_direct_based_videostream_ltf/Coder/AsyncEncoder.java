@@ -26,16 +26,17 @@ public class AsyncEncoder {
     public Surface mSurface;
     private MediaFormat mMediaFormat;
     private long number=1000;
+    byte[] temp=null;
     private int      mViewWidth;
     private int      mViewHeight;
-    private EchoClient echoClient=new EchoClient("192.168.49.109");
-    private EchoClient echoClient2=new EchoClient("192.168.49.93");
-//    private EchoClient echoClient3=new EchoClient("192.168.49.123");
+    private EchoClient echoClient=new EchoClient("192.168.49.125");
+    private EchoClient echoClient2=new EchoClient("192.168.49.1");
+    private EchoClient echoClient3=new EchoClient("192.168.49.28");
 //    private EchoClient echoClient4=new EchoClient("192.168.49.37");
 //    private EchoClient echoClient5=new EchoClient("192.168.49.52");
 //    private EchoClient echoClient6=new EchoClient("192.168.49.166");
     private boolean isgroupowner=DeviceDetailFragment.info.isGroupOwner;
-    //private  MulticastClient multicastClient=new MulticastClient();
+    private  MulticastClient multicastClient=new MulticastClient();
     private Handler mVideoEncoderHandler;
     private HandlerThread mVideoEncoderHandlerThread = new HandlerThread("VideoEncoder");
 
@@ -69,22 +70,29 @@ public class AsyncEncoder {
                 byte [] buffer = new byte[outputBuffer.remaining()];
                 outputBuffer.get(buffer);
                 boolean result = mOutputDatasQueue.offer(buffer);//编好的数据进队
-                byte[] temp=mOutputDatasQueue.poll();
-                if (temp!=null&&number>0){
+                temp=mOutputDatasQueue.poll();
+                if (temp!=null){
                     try {
-                        number--;
-                        echoClient.sendStream_n(temp,temp.length);
+//                        echoClient.sendStream_n(temp,temp.length);
+                        echoClient2.sendStream_n(temp,temp.length);
+                        echoClient3.sendStream_n(temp,temp.length);
+//                        echoClient4.sendStream_n(temp,temp.length);
+//                        echoClient5.sendStream_n(temp,temp.length);
+//                        echoClient6.sendStream_n(temp,temp.length);
 //                        multicastClient.sendmessage(temp,temp.length);
-//                        echoClient2.sendStream_n(temp,temp.length);
-//                        echoClient3.sendStream_n(temp,temp.length);
-////                        echoClient4.sendStream_n(temp,temp.length);
-////                        echoClient5.sendStream_n(temp,temp.length);
-////                        echoClient6.sendStream_n(temp,temp.length);
-////                        multicastClient.sendmessage(temp,temp.length);
-                        Log.d(TAG, "发送的数据"+number);
+//                        Log.d(TAG, "发送的数据"+number);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+//------------------------multicast------------------------------------------
+//                    new Thread(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            try{multicastClient.sendmessage(temp,temp.length);}catch (IOException e){
+//                                e.printStackTrace();
+//                            }
+//                        }
+//                    }).start();
 //                    Log.d(TAG, "onOutputBufferAvailable: 编码压缩后的数据"+temp.length);
                 }
                 else {
@@ -120,14 +128,12 @@ public class AsyncEncoder {
 
         this.mViewWidth  = viewwidth;
         this.mViewHeight = viewheight;
-
         mVideoEncoderHandlerThread.start();
         mVideoEncoderHandler = new Handler(mVideoEncoderHandlerThread.getLooper());
-
         mMediaFormat = MediaFormat.createVideoFormat(mimeType, mViewWidth, mViewHeight);
         mMediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);//视频格式
-        mMediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 2500000);//码率1900000
-        mMediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 24);//帧率
+        mMediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 3000*1024);//码率1900000
+        mMediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 20);//帧率
         mMediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);//关键帧间隔
         mMediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR);
     }

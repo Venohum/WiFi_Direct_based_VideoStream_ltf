@@ -91,7 +91,7 @@ public class VideoDecoder {
 //            ,byte[] sps,byte[] pps
     ){
         try {
-            mMediaCodec = MediaCodec.createDecoderByType(mimeType);
+            mMediaCodec = MediaCodec.createDecoderByType(mimeType);//创建解码器mMediaCodec
         } catch (IOException e) {
             Log.e(TAG, Log.getStackTraceString(e));
             mMediaCodec = null;
@@ -101,7 +101,6 @@ public class VideoDecoder {
         if(surface == null){
             return;
         }
-
         this.mViewWidth  = viewwidth;
         this.mViewHeight = viewheight;
         this.mSurface = surface;
@@ -110,11 +109,11 @@ public class VideoDecoder {
         mVideoDecoderHandler = new Handler(mVideoDecoderHandlerThread.getLooper());
 
         mMediaFormat = MediaFormat.createVideoFormat(mimeType, mViewWidth, mViewHeight);
-        mMediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
-        mMediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 1920 * 1280);
-        mMediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
-        mMediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE,16*32);
-        mMediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
+//        mM+ediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
+//        mMediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 1920 * 1280);
+//        mMediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
+//        mMediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE,16*32);
+//        mMediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
         try {
 //            mMediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(sps));
 //            mMediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(pps));
@@ -133,7 +132,8 @@ public class VideoDecoder {
             try{
             mMediaCodec.setCallback(mCallback, mVideoDecoderHandler);
             mMediaCodec.configure(mMediaFormat, mSurface,null,0);
-            mMediaCodec.start();}catch (Exception e){
+            mMediaCodec.start();
+            }catch (Exception e){
                 e.printStackTrace();
             }
         }else{

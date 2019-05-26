@@ -31,6 +31,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Algorithmic.ComputeBandwidth;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.AsyncEncoder;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.Synchronization.Decoder;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.Synchronization.Encoder;
@@ -127,6 +128,8 @@ public class CameraActivity extends AppCompatActivity {
         });
 
         Log.d(TAG, "onCreate: onCreat执行了！");
+
+
     }
     @Override
     protected void onResume() {
@@ -141,9 +144,13 @@ public class CameraActivity extends AppCompatActivity {
         mSurfaceHolder.addCallback(mSurfaceHolderCallback);
         mSurfaceHolder2.addCallback(mSurfaceHolderCallback1);
 
-
         Log.d(TAG, "onResume: onResume 执行了");
+        /*
+         * 计算实时网速
+         * */
+        new Thread(new ComputeBandwidth()).start();
     }
+
 
     private void initCameraThread() {
         mCameraThread = new HandlerThread("CameraSurfaceViewThread");
@@ -190,6 +197,7 @@ public class CameraActivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void setupCamera(int width, int height) {
         CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+
         if (cameraManager != null)
             try {
                 for (String cameraId : cameraManager.getCameraIdList()) {
@@ -201,14 +209,13 @@ public class CameraActivity extends AppCompatActivity {
                     StreamConfigurationMap map = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
                     assert map != null;
                     mPreviewSize = getOptimalSize(map.getOutputSizes(SurfaceTexture.class), width, height);
+                    Log.d(TAG, "setupCamera尺寸尺寸！！！宽是"+mPreviewSize.getWidth()+"高是"+mPreviewSize.getHeight());
                     mCameraId = cameraId;
 
                 }
             } catch (CameraAccessException e) {
                 e.printStackTrace();
             }
-
-
     }
 
     //选择sizeMap中大于并且最接近width和height的size
@@ -227,6 +234,7 @@ public class CameraActivity extends AppCompatActivity {
             }
         }
         if (sizeList.size() > 0) {
+            Log.d(TAG, "getOptimalSize: "+sizeList.toString());
             return Collections.min(sizeList, new Comparator<Size>() {
                 @Override
                 public int compare(Size lhs, Size rhs) {
@@ -273,7 +281,7 @@ public class CameraActivity extends AppCompatActivity {
             /**
              * 初始化编码器_异步方式
              */
-            initAsyncEncoder("video/avc",720,480);
+            initAsyncEncoder("video/avc",1920,1080);//调节分辨率
             /**
              * 开始预览
              */
