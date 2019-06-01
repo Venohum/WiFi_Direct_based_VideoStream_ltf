@@ -369,11 +369,19 @@ public class CameraActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
-    private void colseSession(){
+    private void closeSession(){
         if (mCameraCaptureSession != null) {
             mCameraCaptureSession.close();
             mCameraCaptureSession = null;
         }
+
+    }
+    private void closeCameraDevice(CameraDevice cameraDevice){
+        if(cameraDevice!=null){
+            mCameraDevice.close();
+            mCameraDevice = null;
+        }
+
 
     }
 
@@ -413,30 +421,9 @@ public class CameraActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        colseSession();
-        if (mCameraDevice != null) {
-            mCameraDevice.close();
-            mCameraDevice = null;
-        }
+        closeSession();
+        closeCameraDevice(mCameraDevice);
     }
-    /**
-     * Mediacodec编码部分
-     */
-    //MediaCodec codec = MediaCodec.createByCodecName("Test");
-    private void startEncode() throws IOException {
-//        int in=encoder.input(data[0],data[0].length,System.nanoTime()/1000);
-//        Log.d(TAG, "startEncode: index"+in);
-//        Log.d(TAG, "startEncode: 编码前，像素平面一"+Arrays.toString(data[0]));
-//        Log.d(TAG, "startEncode: 编码前，像素平面二"+Arrays.toString(data[1]));
-//        Log.d(TAG, "startEncode: 编码前，像素平面三"+Arrays.toString(data[2]));
-
-         encoder.output();
-//        if (nb==0)
-//        Log.d(TAG, "startEncode:编码可以输出了");
-//        Log.d(TAG, "startEncode: "+Arrays.toString(encoder.outputBuffers));
-
-    }
-
 
     /**
      * 编码器初始化_同步方式
@@ -465,6 +452,11 @@ public class CameraActivity extends AppCompatActivity {
         asyncEncoder.startEncoder();
 
     }
+
+    /**
+     * @param target_bitrate
+     * @param fps
+     */
     private void SwithchingBitrate(int target_bitrate,int fps){
 
         try {
@@ -473,12 +465,12 @@ public class CameraActivity extends AppCompatActivity {
 //                asyncEncoder.stopEncoder();
                 asyncEncoder.resetCodec();
                 asyncEncoder.setmMediaFormat(target_bitrate,fps);
-                Log.d(TAG, "onClick: "+asyncEncoder.toString());
+                Log.d(TAG, "SwitchBitrate: "+asyncEncoder.toString());
 
                 asyncEncoder.startEncoder();
-                colseSession();
+                closeSession();
                 startPreView();
-                Log.d(TAG, "onClick: 切换了码率！！！");
+                Log.d(TAG, "SwitchBitrate: 切换了码率！！！");
             }
         }catch (Exception e){
             e.printStackTrace();
