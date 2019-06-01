@@ -128,6 +128,7 @@ public class CameraActivity extends AppCompatActivity {
             }
         });
         Log.d(TAG, "onCreate: onCreat执行了！");
+
     }
     @Override
     protected void onResume() {
