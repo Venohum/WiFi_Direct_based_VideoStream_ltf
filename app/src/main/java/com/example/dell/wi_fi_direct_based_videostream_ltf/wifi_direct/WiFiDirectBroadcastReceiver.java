@@ -86,7 +86,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                       if (group!=null){
                           Log.d(TAG, "onGroupInfoAvailable: "+group.getPassphrase());
                           activity.setSSID(group.getNetworkName());
-                          new Thread(new ParametersCollection(activity)).start();
+                          //new Thread(new ParametersCollection(activity)).start();
                       }
                   }
               });

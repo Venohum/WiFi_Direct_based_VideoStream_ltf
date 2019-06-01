@@ -38,16 +38,51 @@ public class AsyncEncoder {
     private boolean isgroupowner=DeviceDetailFragment.info.isGroupOwner;
     private  MulticastClient multicastClient=new MulticastClient();
     private Handler mVideoEncoderHandler;
-    private HandlerThread mVideoEncoderHandlerThread = new HandlerThread("VideoEncoder");
 
     //This video stream format must be I420
     private final static ArrayBlockingQueue<byte []> mInputDatasQueue = new ArrayBlockingQueue<byte []>(CACHE_BUFFER_SIZE);
     //Cachhe video stream which has been encoded.
     public final static ArrayBlockingQueue<byte []> mOutputDatasQueue = new ArrayBlockingQueue<byte[]>(CACHE_BUFFER_SIZE);
 
-    private MediaCodec.Callback mCallback = new MediaCodec.Callback() {
-        @Override
-        public void onInputBufferAvailable(@NonNull MediaCodec mediaCodec, int id) {
+//    private MediaCodec.Callback mCallback = ;
+
+    public AsyncEncoder(String mimeType, int viewwidth, int viewheight){
+        try {
+            mMediaCodec = MediaCodec.createEncoderByType(mimeType);
+
+        } catch (IOException e) {
+            Log.e(TAG, Log.getStackTraceString(e));
+            mMediaCodec = null;
+            return;
+        }
+
+        this.mViewWidth  = viewwidth;
+        this.mViewHeight = viewheight;
+        HandlerThread mVideoEncoderHandlerThread = new HandlerThread("VideoEncoder");
+        mVideoEncoderHandlerThread.start();
+        mVideoEncoderHandler = new Handler(mVideoEncoderHandlerThread.getLooper());
+
+
+    }
+
+    public void resetCodec(){
+
+        mMediaCodec.reset();
+    }
+
+    public void setmMediaFormat(int bitrate,int fps){
+
+
+
+        mMediaFormat = MediaFormat.createVideoFormat("video/avc", mViewWidth, mViewHeight);
+        mMediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);//视频格式
+        mMediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);//码率1900000
+        mMediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, fps);//帧率
+        mMediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);//关键帧间隔
+        mMediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR);
+        mMediaCodec.setCallback(new MediaCodec.Callback() {
+            @Override
+            public void onInputBufferAvailable(@NonNull MediaCodec mediaCodec, int id) {
 //            ByteBuffer inputBuffer = mediaCodec.getInputBuffer(id);
 //            inputBuffer.clear();
 ////            Log.d(TAG, "onInputBufferAvailable: 编码器编码输入缓冲区可用了！"+id);
@@ -60,30 +95,30 @@ public class AsyncEncoder {
 ////                mediaCodec.queueInputBuffer(id,0, length,0,0);
 //            }
 //            mediaCodec.queueInputBuffer(id,0, length,System.nanoTime()/1000,0);
-        }
+            }
 
-        @Override
-        public void onOutputBufferAvailable(@NonNull MediaCodec mediaCodec, int id, @NonNull MediaCodec.BufferInfo bufferInfo) {
-            ByteBuffer outputBuffer = mMediaCodec.getOutputBuffer(id);
-            MediaFormat outputFormat = mMediaCodec.getOutputFormat(id);
-            if(outputBuffer != null && bufferInfo.size > 0){
-                byte [] buffer = new byte[outputBuffer.remaining()];
-                outputBuffer.get(buffer);
-                boolean result = mOutputDatasQueue.offer(buffer);//编好的数据进队
-                temp=mOutputDatasQueue.poll();
-                if (temp!=null){
-                    try {
+            @Override
+            public void onOutputBufferAvailable(@NonNull MediaCodec mediaCodec, int id, @NonNull MediaCodec.BufferInfo bufferInfo) {
+                ByteBuffer outputBuffer = mMediaCodec.getOutputBuffer(id);
+                MediaFormat outputFormat = mMediaCodec.getOutputFormat(id);
+                if(outputBuffer != null && bufferInfo.size > 0){
+                    byte [] buffer = new byte[outputBuffer.remaining()];
+                    outputBuffer.get(buffer);
+                    boolean result = mOutputDatasQueue.offer(buffer);//编好的数据进队
+                    temp=mOutputDatasQueue.poll();
+                    if (temp!=null){
+                        try {
 //                        echoClient.sendStream_n(temp,temp.length);
-                        echoClient2.sendStream_n(temp,temp.length);
-                        echoClient3.sendStream_n(temp,temp.length);
+                            echoClient2.sendStream_n(temp,temp.length);
+                            echoClient3.sendStream_n(temp,temp.length);
 //                        echoClient4.sendStream_n(temp,temp.length);
 //                        echoClient5.sendStream_n(temp,temp.length);
 //                        echoClient6.sendStream_n(temp,temp.length);
 //                        multicastClient.sendmessage(temp,temp.length);
 //                        Log.d(TAG, "发送的数据"+number);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
 //------------------------multicast------------------------------------------
 //                    new Thread(new Runnable() {
 //                        @Override
@@ -94,48 +129,33 @@ public class AsyncEncoder {
 //                        }
 //                    }).start();
 //                    Log.d(TAG, "onOutputBufferAvailable: 编码压缩后的数据"+temp.length);
+                    }
+                    else {
+                        //Log.d(TAG, "onOutputBufferAvailable: 发送完毕！");
+                    }
+                    if(!result){
+                        Log.d(TAG, "Offer to queue failed, queue in full state");
+                    }
                 }
-                else {
-                    //Log.d(TAG, "onOutputBufferAvailable: 发送完毕！");
-                }
-                if(!result){
-                    Log.d(TAG, "Offer to queue failed, queue in full state");
-                }
-            }
-            mMediaCodec.releaseOutputBuffer(id, true);
+                mMediaCodec.releaseOutputBuffer(id, true);
 //            Log.d(TAG, "onOutputBufferAvailable: 释放了释放了"+number);
-        }
+            }
 
-        @Override
-        public void onError(@NonNull MediaCodec mediaCodec, @NonNull MediaCodec.CodecException e) {
-            Log.d(TAG, "------> onError");
-        }
+            @Override
+            public void onError(@NonNull MediaCodec mediaCodec, @NonNull MediaCodec.CodecException e) {
+                Log.d(TAG, "------> onError");
+            }
 
-        @Override
-        public void onOutputFormatChanged(@NonNull MediaCodec mediaCodec, @NonNull MediaFormat mediaFormat) {
-            Log.d(TAG, "------> onOutputFormatChanged");
-        }
-    };
+            @Override
+            public void onOutputFormatChanged(@NonNull MediaCodec mediaCodec, @NonNull MediaFormat mediaFormat) {
 
-    public AsyncEncoder(String mimeType, int viewwidth, int viewheight){
-        try {
-            mMediaCodec = MediaCodec.createEncoderByType(mimeType);
-        } catch (IOException e) {
-            Log.e(TAG, Log.getStackTraceString(e));
-            mMediaCodec = null;
-            return;
-        }
 
-        this.mViewWidth  = viewwidth;
-        this.mViewHeight = viewheight;
-        mVideoEncoderHandlerThread.start();
-        mVideoEncoderHandler = new Handler(mVideoEncoderHandlerThread.getLooper());
-        mMediaFormat = MediaFormat.createVideoFormat(mimeType, mViewWidth, mViewHeight);
-        mMediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);//视频格式
-        mMediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 3000*1024);//码率1900000
-        mMediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 20);//帧率
-        mMediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);//关键帧间隔
-        mMediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR);
+                Log.d(TAG, "onOutputFormatChanged: "+mediaFormat.toString());
+                Log.d(TAG, "------> onOutputFormatChanged");
+            }
+        }, mVideoEncoderHandler);
+        mMediaCodec.configure(mMediaFormat, null, null, CONFIGURE_FLAG_ENCODE);
+        mSurface=mMediaCodec.createInputSurface();
     }
 
     /**
@@ -160,11 +180,10 @@ public class AsyncEncoder {
      */
     @RequiresApi(api = Build.VERSION_CODES.M)
     public void startEncoder(){
-        if(mMediaCodec != null){
-            mMediaCodec.setCallback(mCallback, mVideoEncoderHandler);
 
-            mMediaCodec.configure(mMediaFormat, null, null, CONFIGURE_FLAG_ENCODE);
-            mSurface=mMediaCodec.createInputSurface();
+
+        if(mMediaCodec != null){
+
             mMediaCodec.start();
         }else{
             throw new IllegalArgumentException("startEncoder failed,is the MediaCodec has been init correct?");
@@ -190,6 +209,12 @@ public class AsyncEncoder {
         if(mMediaCodec != null){
             mMediaCodec.stop();
             mMediaCodec.setCallback(null);
+
+            HandlerThread mVideoEncoderHandlerThread = new HandlerThread("VideoEncoder");
+            mVideoEncoderHandlerThread.start();
+            mVideoEncoderHandler = new Handler(mVideoEncoderHandlerThread.getLooper());
+
+
         }
     }
 
