@@ -25,6 +25,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
+import android.view.Menu;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -40,6 +41,7 @@ import com.example.dell.wi_fi_direct_based_videostream_ltf.Multicast.MulticastSe
 import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.UDP.EchoServer;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct.DeviceDetailFragment;
+import com.googlecode.javacv.cpp.ARToolKitPlus;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -78,6 +80,7 @@ public class CameraActivity extends AppCompatActivity {
     private Decoder mDecoder;
     private AsyncEncoder asyncEncoder;
     private MulticastServer multicastServer;
+    private ComputeBandwidth computeBandwidth_CameraActivity;
 
     private EchoServer server;
     //public static File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/6.h264");
@@ -129,6 +132,10 @@ public class CameraActivity extends AppCompatActivity {
         });
         Log.d(TAG, "onCreate: onCreat执行了！");
     }
+
+
+
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -146,7 +153,8 @@ public class CameraActivity extends AppCompatActivity {
         /*
          * 计算实时网速
          * */
-//        new Thread(new ComputeBandwidth()).start();
+        computeBandwidth_CameraActivity=new ComputeBandwidth();
+        new Thread(computeBandwidth_CameraActivity).start();
     }
 
 
@@ -421,8 +429,13 @@ public class CameraActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+
+        computeBandwidth_CameraActivity.setStatus(false);
         closeSession();
         closeCameraDevice(mCameraDevice);
+
+
+
     }
 
     /**
@@ -459,10 +472,10 @@ public class CameraActivity extends AppCompatActivity {
      */
     private void SwithchingBitrate(int target_bitrate,int fps){
 
+
         try {
             if (asyncEncoder!=null){
-
-//                asyncEncoder.stopEncoder();
+//              asyncEncoder.stopEncoder();
                 asyncEncoder.resetCodec();
                 asyncEncoder.setmMediaFormat(target_bitrate,fps);
                 Log.d(TAG, "SwitchBitrate: "+asyncEncoder.toString());
@@ -470,7 +483,7 @@ public class CameraActivity extends AppCompatActivity {
                 asyncEncoder.startEncoder();
                 closeSession();
                 startPreView();
-                Log.d(TAG, "SwitchBitrate: 切换了码率！！！");
+                Log.d(TAG, "SwitchBitrate: 码率被切换为："+bitrate+"kbps");
             }
         }catch (Exception e){
             e.printStackTrace();

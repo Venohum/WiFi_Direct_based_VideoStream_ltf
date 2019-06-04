@@ -19,6 +19,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
     private WifiP2pManager manager;
     private WifiP2pManager.Channel channel;
     private WiFiDirectActivity activity;
+    final ParametersCollection parametersCollection;
     /**
      * @param manager WifiP2pManager system service
      * @param channel Wifi p2p channel
@@ -30,6 +31,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
         this.manager = manager;
         this.channel = channel;
         this.activity = activity;
+        parametersCollection=new ParametersCollection(activity);
     }
     /*
      * (non-Javadoc)
@@ -39,6 +41,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
+
         if (WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION.equals(action)) {
 
             // UI update to indicate wifi p2p status.
@@ -64,35 +67,38 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
             }
             Log.d(TAG, "P2P peers changed");
         } else if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.equals(action)) {
+
+
+
             if (manager == null) {
                 return;
             }
             Toast.makeText(activity,"P2P_connection_changed_action",Toast.LENGTH_SHORT).show();
-            NetworkInfo networkInfo = (NetworkInfo) intent
-                    .getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
+            NetworkInfo networkInfo = (NetworkInfo) intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
 
             if (networkInfo.isConnected()) {
 
                 // we are connected with the other device, request connection
                 // info to find group owner IP
 
-                DeviceDetailFragment fragment = (DeviceDetailFragment) activity
-                        .getFragmentManager().findFragmentById(R.id.frag_detail);
+                DeviceDetailFragment fragment = (DeviceDetailFragment) activity.getFragmentManager().findFragmentById(R.id.frag_detail);
               manager.requestConnectionInfo(channel, fragment);
               manager.requestGroupInfo(channel, new WifiP2pManager.GroupInfoListener() {
                   @Override
                   public void onGroupInfoAvailable(WifiP2pGroup group) {
-                      Log.d(TAG, "onGroupInfoAvailable: ");
                       if (group!=null){
                           Log.d(TAG, "onGroupInfoAvailable: "+group.getPassphrase());
                           activity.setSSID(group.getNetworkName());
-                          //new Thread(new ParametersCollection(activity)).start();
+                          parametersCollection.setStatus(true);
+                          new Thread(parametersCollection).start();
                       }
                   }
               });
             } else {
                 // It's a disconnect
+                parametersCollection.setStatus(false);
                 activity.resetData();
+//                Log.d(TAG, "onReceive: 断了断了");
             }
         } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
             DeviceListFragment fragment = (DeviceListFragment) activity.getFragmentManager()

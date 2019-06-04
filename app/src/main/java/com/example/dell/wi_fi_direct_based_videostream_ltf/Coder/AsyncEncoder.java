@@ -10,6 +10,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.util.Log;
 import android.view.Surface;
+
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Camera.Util;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.UDP.EchoClient;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Multicast.MulticastClient;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct.DeviceDetailFragment;
@@ -109,6 +111,7 @@ public class AsyncEncoder {
                     if (temp!=null){
                         try {
 //                        echoClient.sendStream_n(temp,temp.length);
+//                            echoClient2.sendStream_n(Util.rotateYUV240SP(temp,1440,1080),temp.length);
                             echoClient2.sendStream_n(temp,temp.length);
                             echoClient3.sendStream_n(temp,temp.length);
 //                        echoClient4.sendStream_n(temp,temp.length);

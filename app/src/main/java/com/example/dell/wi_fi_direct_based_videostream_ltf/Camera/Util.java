@@ -44,6 +44,41 @@ public class Util {
     }
 
     /**
+     *
+     * @param src
+     * @param des
+     * @param width
+     * @param height
+     */
+    public static byte[] rotateYUV240SP(byte[] src,int width,int height)
+    {
+
+        int wh = width * height;
+        byte[] des=new byte[src.length];
+        //旋转Y
+        int k = 0;
+        for(int i=0;i<width;i++) {
+            for(int j=0;j<height;j++)
+            {
+                des[k] = src[width*j + i];
+                k++;
+            }
+        }
+
+        for(int i=0;i<width;i+=2) {
+            for(int j=0;j<height/2;j++)
+            {
+                des[k] = src[wh+ width*j + i];
+                des[k+1]=src[wh + width*j + i+1];
+                k+=2;
+            }
+        }
+        return des;
+
+    }
+
+
+    /**
      * 保存数据到本地
      *
      * @param buffer 要保存的数据

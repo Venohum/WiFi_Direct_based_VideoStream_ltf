@@ -86,14 +86,14 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
             }
         });
 
-
+        receiver = new WiFiDirectBroadcastReceiver(manager, channel, this);
     }
 
     /** register the BroadcastReceiver with the intent values to be matched */
     @Override
     public void onResume() {
         super.onResume();
-        receiver = new WiFiDirectBroadcastReceiver(manager, channel, this);
+
         registerReceiver(receiver, intentFilter);
     }
 
