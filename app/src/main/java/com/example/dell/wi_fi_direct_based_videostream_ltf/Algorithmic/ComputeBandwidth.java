@@ -20,7 +20,7 @@ import static com.example.dell.wi_fi_direct_based_videostream_ltf.Algorithmic.Pa
 public class ComputeBandwidth implements Runnable {
     private long preDataSize= 0L;
     private boolean isalive=true;
-    private static final int TIME=20;//测量20组数据
+    static final int TIME=10;//测量10组数据
     public static ArrayBlockingQueue<Integer> throughtput_queue= new ArrayBlockingQueue<>(TIME);
     static int throughtput =-1;
 
@@ -40,8 +40,6 @@ public class ComputeBandwidth implements Runnable {
             throughtput = (int) temp * 8 / 1024;
             throughtput_queue.add(throughtput);
 
-//            Log.d(TAG, "run: Bandwidth-----："+throughtput+"kbps");
-//            Log.d(TAG, "run: throughtput_queue.size()"+throughtput_queue.size());
             if (throughtput_queue.size()>=TIME)
                 throughtput_queue.poll();
         }
@@ -49,6 +47,16 @@ public class ComputeBandwidth implements Runnable {
 //    public double getBandwidth() {
 //        return bandwidth;
 //    }
+    public static float AVG_function(ArrayBlockingQueue arrayBlockingQueue){
+        int temp=0;
+        float result;
+        for (int i=0;i<arrayBlockingQueue.size();i++){
+            temp+=(Integer) arrayBlockingQueue.peek();
+
+        }
+        result= (float) (temp*1.0/arrayBlockingQueue.size());
+        return result;
+    }
 
     public void setStatus(boolean isalive){
         this.isalive=isalive;

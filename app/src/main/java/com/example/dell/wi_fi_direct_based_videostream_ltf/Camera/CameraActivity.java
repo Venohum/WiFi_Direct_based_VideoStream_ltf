@@ -15,6 +15,7 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.media.MediaActionSound;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -33,6 +34,7 @@ import android.view.View;
 import android.widget.Button;
 
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Algorithmic.ComputeBandwidth;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Algorithmic.ParametersCollection;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.AsyncEncoder;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.Synchronization.Decoder;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.Synchronization.Encoder;
@@ -81,14 +83,13 @@ public class CameraActivity extends AppCompatActivity {
     private AsyncEncoder asyncEncoder;
     private MulticastServer multicastServer;
     private ComputeBandwidth computeBandwidth_CameraActivity;
-
+    private boolean running;
     private EchoServer server;
+    private int target_bitrate=2000;
     //public static File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/6.h264");
 
     public CameraActivity() throws IOException {
     }
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -101,40 +102,34 @@ public class CameraActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 //                Log.d(TAG, "onClick: 是组主么"+DeviceDetailFragment.info.isGroupOwner);
-////                if (DeviceDetailFragment.info.isGroupOwner)
-//               try{
-//
-//                    server=new EchoServer();
-//                    new Thread(server).start();
-//                    multicastServer=new MulticastServer();
-//                    new Thread(multicastServer).start();
-//                    Log.d(TAG, "onClick: 这是UDP 服务端！");
-//
-//
-//                   new Thread(new Runnable() {
-//                       @Override
-//                       public void run() {
-//                           if (mSurfaceHolder2.getSurface()!=null){
-//                               Log.d(TAG, "run: surface2"+mSurfaceHolder2.getSurface().toString());
-//                           startdecode(MIME_TYPE,mSurfaceHolder2.getSurface(),16,32,server,multicastServer);
-//                           Log.d(TAG, "run: 解码开始！");}
-//                           else {
-//                               Log.d(TAG, "run: surface2为空无法解码！");
-//                           }
-//                       }
-//                   }).start();
-//
-//                }catch (Exception e){
-//                    e.printStackTrace();
-//            }
-                SwithchingBitrate(500*1024,25);
+                if (DeviceDetailFragment.info.isGroupOwner)
+               try{
+                    server=new EchoServer();
+                    new Thread(server).start();
+                    multicastServer=new MulticastServer();
+                    new Thread(multicastServer).start();
+                    Log.d(TAG, "onClick: 这是UDP 服务端！");
+
+                   new Thread(new Runnable() {
+                       @Override
+                       public void run() {
+                           if (mSurfaceHolder2.getSurface()!=null){
+                               Log.d(TAG, "run: surface2"+mSurfaceHolder2.getSurface().toString());
+                           startdecode(MIME_TYPE,mSurfaceHolder2.getSurface(),16,32,server,multicastServer);
+                           Log.d(TAG, "run: 解码开始！");}
+                           else {
+                               Log.d(TAG, "run: surface2为空无法解码！");
+                           }
+                       }
+                   }).start();
+
+                }catch (Exception e){
+                    e.printStackTrace();
+            }
             }
         });
         Log.d(TAG, "onCreate: onCreat执行了！");
     }
-
-
-
 
     @Override
     protected void onResume() {
@@ -151,12 +146,52 @@ public class CameraActivity extends AppCompatActivity {
 
         Log.d(TAG, "onResume: onResume 执行了");
         /*
-         * 计算实时网速
+         * 计算实时吞吐量
+         * 码率切换
          * */
-        computeBandwidth_CameraActivity=new ComputeBandwidth();
-        new Thread(computeBandwidth_CameraActivity).start();
-    }
+        if (!DeviceDetailFragment.info.isGroupOwner){
+            computeBandwidth_CameraActivity=new ComputeBandwidth();
+            new Thread(computeBandwidth_CameraActivity).start();
 
+            running=true;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+
+                    while (running){
+                        float pre_data= ComputeBandwidth.AVG_function(ParametersCollection.RSSI_queue);
+                        try{
+                            Thread.sleep(4000);
+                        }
+                        catch (Exception e){
+                            e.printStackTrace();
+                        }
+                        float rangeability=ComputeBandwidth.AVG_function(ParametersCollection.RSSI_queue)-pre_data;
+                        Log.d(TAG, "run: RSSI变化幅度："+rangeability/10);
+//                        Log.d(TAG, "run: RSSI均值-----------------是  ："+ComputeBandwidth.AVG_function(ParametersCollection.RSSI_queue));
+
+                        if (target_bitrate+(int)rangeability/10*500>0&&Math.abs(rangeability/10)>=1.0)//目标码率须为整数，且变化幅度超过1个等级触发码率切换
+                        {
+                            if (target_bitrate+(int)rangeability/10*500>2500){//每个等级，码率增减500kbps
+                                SwithchingBitrate(2500,24);//为了保证质量，最高码率暂时定义为2500kbps
+                                target_bitrate=2500;
+                            }else{
+                                SwithchingBitrate(target_bitrate+(int)rangeability/10*500,24);
+                                target_bitrate+=(int)rangeability/10*500;
+                            }
+                        }
+                        if (ComputeBandwidth.AVG_function(ParametersCollection.RSSI_queue)>=-20&&target_bitrate<=1500){//保证在较高RSSI的情况下有较高质量的码率
+                            SwithchingBitrate(2000,24);
+                            target_bitrate=2000;
+                        }
+
+
+
+                    }
+                }
+            }).start();
+        }
+    }
 
     private void initCameraThread() {
         mCameraThread = new HandlerThread("CameraSurfaceViewThread");
@@ -433,9 +468,18 @@ public class CameraActivity extends AppCompatActivity {
         computeBandwidth_CameraActivity.setStatus(false);
         closeSession();
         closeCameraDevice(mCameraDevice);
+        running=false;
 
 
 
+    }
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    private void startdecode(String mimeType, Surface surface, int viewwidth, int viewheight, EchoServer echoServer,MulticastServer multicastServer){
+        VideoDecoder videoDecoder=new VideoDecoder(mimeType,surface,viewwidth,viewheight);
+//        Log.d(TAG, "startdecode: sps"+Arrays.toString(encoder.mSps));
+//        Log.d(TAG, "startdecode: pps"+Arrays.toString(encoder.mPps));
+        videoDecoder.setechoServer(echoServer,multicastServer);
+        videoDecoder.startDecoder();
     }
 
     /**
@@ -461,7 +505,7 @@ public class CameraActivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.M)
     private void initAsyncEncoder(String MIME_TYPE, int with, int hight){
         asyncEncoder=new AsyncEncoder(MIME_TYPE,with,hight);
-        asyncEncoder.setmMediaFormat(3000*1024,24);//视频默认码率
+        asyncEncoder.setmMediaFormat(2000,24);//视频默认码率
         asyncEncoder.startEncoder();
 
     }
@@ -478,12 +522,11 @@ public class CameraActivity extends AppCompatActivity {
 //              asyncEncoder.stopEncoder();
                 asyncEncoder.resetCodec();
                 asyncEncoder.setmMediaFormat(target_bitrate,fps);
-                Log.d(TAG, "SwitchBitrate: "+asyncEncoder.toString());
-
+//                Log.d(TAG, "SwitchBitrate: "+asyncEncoder.toString());
                 asyncEncoder.startEncoder();
                 closeSession();
                 startPreView();
-                Log.d(TAG, "SwitchBitrate: 码率被切换为："+bitrate+"kbps");
+                Log.d(TAG, "SwitchBitrate: 码率被切换为："+target_bitrate+"kbps");
             }
         }catch (Exception e){
             e.printStackTrace();

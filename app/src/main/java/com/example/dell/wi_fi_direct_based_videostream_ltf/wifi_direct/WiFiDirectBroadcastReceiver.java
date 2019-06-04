@@ -25,8 +25,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
      * @param channel Wifi p2p channel
      * @param activity activity associated with the receiver
      */
-    public WiFiDirectBroadcastReceiver(WifiP2pManager manager, WifiP2pManager.Channel channel,
-                                       WiFiDirectActivity activity) {
+    public WiFiDirectBroadcastReceiver(WifiP2pManager manager, WifiP2pManager.Channel channel, WiFiDirectActivity activity) {
         super();
         this.manager = manager;
         this.channel = channel;
@@ -90,6 +89,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                           Log.d(TAG, "onGroupInfoAvailable: "+group.getPassphrase());
                           activity.setSSID(group.getNetworkName());
                           parametersCollection.setStatus(true);
+                          if (!DeviceDetailFragment.info.isGroupOwner)
                           new Thread(parametersCollection).start();
                       }
                   }

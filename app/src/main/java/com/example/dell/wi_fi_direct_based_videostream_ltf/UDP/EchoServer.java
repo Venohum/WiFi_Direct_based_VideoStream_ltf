@@ -24,7 +24,7 @@ public class EchoServer implements Runnable {
     private DatagramSocket socket;
 
     private boolean running;
-    private byte[]buf=new byte[1024*40];
+    private byte[]buf=new byte[1024*90];
     private FileOutputStream fileOutputStream;
     public DatagramPacket packet;
     private final static int CACHE_BUFFER_SIZE=8;//定义队列大小

@@ -74,11 +74,9 @@ public class AsyncEncoder {
 
     public void setmMediaFormat(int bitrate,int fps){
 
-
-
         mMediaFormat = MediaFormat.createVideoFormat("video/avc", mViewWidth, mViewHeight);
         mMediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);//视频格式
-        mMediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);//码率1900000
+        mMediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate*1024);//码率1900000
         mMediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, fps);//帧率
         mMediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);//关键帧间隔
         mMediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR);
@@ -111,9 +109,10 @@ public class AsyncEncoder {
                     if (temp!=null){
                         try {
 //                        echoClient.sendStream_n(temp,temp.length);
-//                            echoClient2.sendStream_n(Util.rotateYUV240SP(temp,1440,1080),temp.length);
+//                          echoClient2.sendStream_n(Util.rotateYUV240SP(temp,1440,1080),temp.length);
+                            if (!DeviceDetailFragment.info.isGroupOwner)
                             echoClient2.sendStream_n(temp,temp.length);
-                            echoClient3.sendStream_n(temp,temp.length);
+//                            echoClient3.sendStream_n(temp,temp.length);
 //                        echoClient4.sendStream_n(temp,temp.length);
 //                        echoClient5.sendStream_n(temp,temp.length);
 //                        echoClient6.sendStream_n(temp,temp.length);
