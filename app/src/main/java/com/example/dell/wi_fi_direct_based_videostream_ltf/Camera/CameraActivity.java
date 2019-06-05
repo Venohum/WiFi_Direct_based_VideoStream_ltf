@@ -170,7 +170,7 @@ public class CameraActivity extends AppCompatActivity {
                         Log.d(TAG, "run: RSSI变化幅度："+rangeability/10);
 //                        Log.d(TAG, "run: RSSI均值-----------------是  ："+ComputeBandwidth.AVG_function(ParametersCollection.RSSI_queue));
 
-                        if (target_bitrate+(int)rangeability/10*500>0&&Math.abs(rangeability/10)>=1.0)//目标码率须为整数，且变化幅度超过1个等级触发码率切换
+                        if (target_bitrate+(int)rangeability/10*500>0&&Math.abs(rangeability/10)>=1.0)//目标码率须为正数，且变化幅度超过1个等级触发码率切换
                         {
                             if (target_bitrate+(int)rangeability/10*500>2500){//每个等级，码率增减500kbps
                                 SwithchingBitrate(2500,24);//为了保证质量，最高码率暂时定义为2500kbps
