@@ -3,8 +3,6 @@ package com.example.dell.wi_fi_direct_based_videostream_ltf.Camera;
 import android.util.Log;
 
 /*
- * Author:Vincent Luo
- * Date: 20150615
  * Description:参考H264标准语法实现对SPS参数的解析
  */
 public class H264SPSPaser {

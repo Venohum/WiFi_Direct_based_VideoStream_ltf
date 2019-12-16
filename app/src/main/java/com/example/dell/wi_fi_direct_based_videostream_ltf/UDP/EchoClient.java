@@ -3,6 +3,9 @@ package com.example.dell.wi_fi_direct_based_videostream_ltf.UDP;
 import android.content.Context;
 import android.util.Log;
 
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.Frame;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.Object2Array;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -21,6 +24,8 @@ public class EchoClient {
     private DatagramSocket socket;
     private MulticastSocket multicastSocket;
     private InetAddress address;
+    private Frame frame1=new Frame();
+    private Frame frame2=new Frame();
     private byte[] buf;
 //
     public EchoClient(String ipaddress){
@@ -75,13 +80,34 @@ public class EchoClient {
     }
     public void sendStream_n (byte[]buf,int length)throws IOException {
 
-        DatagramPacket datagramPacket=new DatagramPacket(buf,length,address,4448);
+        if (buf.length>65507){
+            Log.d(TAG, "sendStream_n: Message too long！I帧超长，进行分割，"+buf.length);
+            byte [] fragment1=new byte[60000];
+            byte [] fragment2=new byte[length-60000];
+            System.arraycopy(buf,0,fragment1,0,60000);
+            System.arraycopy(buf,60000,fragment2,0,length-60000);
+            frame1.data=fragment1;
+            frame1.issplit=1;
+            frame1.hasmore=1;
+            frame2.data=fragment2;
+            frame2.hasmore=0;
+            frame2.issplit=1;
+            DatagramPacket datagramPacket1=new DatagramPacket(Object2Array.objectToByteArray(frame1),Object2Array.objectToByteArray(frame1).length,address,4448);
+            DatagramPacket datagramPacket2=new DatagramPacket(Object2Array.objectToByteArray(frame2),Object2Array.objectToByteArray(frame2).length,address,4448);
+            socket.send(datagramPacket1);
+            socket.send(datagramPacket2);
+        }
+        else {
+            Frame frame=new Frame();
+            frame.data=buf;
+            frame.issplit=0;
+            frame.hasmore=0;
+        DatagramPacket datagramPacket=new DatagramPacket(Object2Array.objectToByteArray(frame),Object2Array.objectToByteArray(frame).length,address,4448);
         socket.send(datagramPacket);
+        }
     }
-
     public void close(){
         socket.close();
-
     }
 
 }

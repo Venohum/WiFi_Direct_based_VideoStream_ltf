@@ -62,10 +62,16 @@ public class RecordService extends Service {
     mediaRecorder = new MediaRecorder();
 
   }
-
+  /**
+   *
+   * 停止服务，为何没有重写
+   *
+   */
   @Override
   public void onDestroy() {
     super.onDestroy();
+    running=false;
+    Log.d(TAG, "录屏服务已经关闭！");
   }
 
   public void setMediaProject(MediaProjection project) {
@@ -108,7 +114,7 @@ public class RecordService extends Service {
       return false;
     }
     running = false;
-    mediaRecorder.stop();
+//    mediaRecorder.stop();
     mediaRecorder.reset();
     virtualDisplay.release();
     mediaProjection.stop();
@@ -122,7 +128,7 @@ public class RecordService extends Service {
       if (asyncEncoder.mSurface!=null){
       virtualDisplay = mediaProjection.createVirtualDisplay("MainScreen", width, height, dpi,
               DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, asyncEncoder.mSurface, null, null);}
-              else {
+      else {
         Log.d(TAG, "createVirtualDisplay: surface是空得！");
       }
     }catch (Exception e){
@@ -175,6 +181,10 @@ public class RecordService extends Service {
     }
   }
 
+  /**
+   * 内部类
+   * RecorderBinder
+   */
   public class RecordBinder extends Binder {
     public RecordService getRecordService() {
       return RecordService.this;
@@ -197,10 +207,11 @@ public class RecordService extends Service {
     Log.d(TAG, "initEncoder: 编码器初始化完成！");
   }
 
+  @TargetApi(Build.VERSION_CODES.O)
   @RequiresApi(api = Build.VERSION_CODES.M)
   private void startencode(String mimeType,int viewwidth, int viewheight){
     asyncEncoder=new AsyncEncoder(mimeType,viewwidth,viewheight);
-
+    asyncEncoder.setmMediaFormat(1500,24);
     asyncEncoder.startEncoder();
   }
 }

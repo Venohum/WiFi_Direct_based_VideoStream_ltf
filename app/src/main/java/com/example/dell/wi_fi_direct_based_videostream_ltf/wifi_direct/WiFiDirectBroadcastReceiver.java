@@ -86,10 +86,11 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                   @Override
                   public void onGroupInfoAvailable(WifiP2pGroup group) {
                       if (group!=null){
-                          Log.d(TAG, "onGroupInfoAvailable: "+group.getPassphrase());
+                          Log.d(TAG, "onGroupInfoAvailable:网络密码："+group.getPassphrase());
+                          Log.d(TAG,"onGroupInfoAvailable 网络名称："+group.getNetworkName());
                           activity.setSSID(group.getNetworkName());
                           parametersCollection.setStatus(true);
-                          if (!DeviceDetailFragment.info.isGroupOwner)
+                          if (!DeviceDetailFragment.info.isGroupOwner)//如果不是组主，则开始收集参数
                           new Thread(parametersCollection).start();
                       }
                   }

@@ -37,7 +37,7 @@ public class DeviceDetailFragment extends Fragment implements WifiP2pManager.Con
     public View onCreateView(final LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
         mContentView = inflater.inflate(R.layout.device_detail, null);
-        mContentView.findViewById(R.id.btn_connect).setOnClickListener(new View.OnClickListener() {
+        mContentView.findViewById(R.id.btn_connect).setOnClickListener(new View.OnClickListener() {//点击connect按钮
 
             @Override
             public void onClick(View v) {

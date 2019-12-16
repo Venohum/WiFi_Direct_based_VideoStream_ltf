@@ -3,6 +3,8 @@ package com.example.dell.wi_fi_direct_based_videostream_ltf.Multicast;
 import android.os.Looper;
 import android.util.Log;
 
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.Frame;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.Object2Array;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.UDP.EchoClient;
 
 import java.io.IOException;
@@ -25,10 +27,14 @@ public class MulticastServer implements Runnable {
     private int packet_number=0;
     private DatagramSocket socket;
     private MulticastSocket multicastSocket;
-    private boolean running;
+    private volatile boolean running;
     private byte[]buf=new byte[1024*40];
     public DatagramPacket packet;
     private static final int  port= 50003;
+    //private byte[] buf = new byte[1024 * 90];
+
+    private byte[] frame_fragment = new byte[60000];
+
     private final static int CACHE_BUFFER_SIZE=8;//定义队列大小
     private final static ArrayBlockingQueue<byte[]> mInputDataQueue=new ArrayBlockingQueue<byte[]>(CACHE_BUFFER_SIZE);
     //    private final static ArrayBlockingQueue<byte[]>mOutputDataQueue=new ArrayBlockingQueue<byte[]>(CACHE_BUFFER_SIZE);
@@ -53,6 +59,7 @@ public class MulticastServer implements Runnable {
             try {
                 multicastSocket.receive(packet);
 //                new EchoClient("192.168.49.125").sendStream_n(packet.getData(),packet.getLength());
+                issplit(packet);
                 packet_number++;
                 Log.d(TAG, " "+packet_number+"runMulticast: "+Arrays.toString(packet.getData()));
                 byte[]temp=new byte[packet.getLength()];
@@ -104,5 +111,25 @@ public class MulticastServer implements Runnable {
         }
         return null;
     }
+    public void stop_service(){
 
+        running=false;
+    }
+
+    private void issplit(DatagramPacket packet) {
+
+        Frame frame = (Frame) Object2Array.byteArrayToObject(packet.getData());
+        if (frame.issplit == 1 && frame.hasmore == 1) {
+            System.arraycopy(frame.data, 0, frame_fragment, 0, frame.data.length);
+        } else if (frame.issplit == 1 && frame.hasmore == 0) {
+            byte[] frame_data = new byte[frame_fragment.length + frame.data.length];
+            System.arraycopy(frame_fragment, 0, frame_data, 0, frame_fragment.length);
+            System.arraycopy(frame.data, 0, frame_data, frame_fragment.length, frame.data.length);
+            mInputDataQueue.offer(frame_data);//重组I帧并进队
+        } else {
+
+            mInputDataQueue.offer(frame.data);//直接拆包进队
+        }
+        //Log.d(TAG, "issplit: 队列空间的剩余大小"+mInputDataQueue.size());
+    }
 }

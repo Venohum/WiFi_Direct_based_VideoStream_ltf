@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.dell.wi_fi_direct_based_videostream_ltf">
 
+    <uses-sdk tools:ignore="GradleOverrides" />
+
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
@@ -12,18 +14,18 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
 
     <uses-feature
         android:name="android.hardware.wifi.direct"
         android:required="true" />
-    <uses-feature android:name="android.hardware.camera2.full"
-        android:required="true"/>
+    <uses-feature
+        android:name="android.hardware.camera2.full"
+        android:required="true" />
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-sdk tools:ignore="GradleOverrides" />
 
     <application
         android:allowBackup="true"
@@ -33,6 +35,11 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
+        <service
+            android:name=".recorder.MyService"
+            android:enabled="true"
+            android:exported="true"></service>
+
         <activity android:name=".wifi_direct.WiFiDirectActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -44,9 +51,7 @@
 
         <service android:name=".recorder.RecordService" />
 
-        <activity android:name=".chat.TextureActivity" />
-
-        <activity android:name=".Camera.CameraActivity"/>
+        <activity android:name=".Camera.CameraActivity" />
     </application>
 
 </manifest>

@@ -21,8 +21,6 @@ public class ParametersCollection implements Runnable {
 
         this.wiFiDirectActivity=wiFiDirectActivity;
     }
-
-
     @Override
     public void run() {
 //        Log.d(TAG, "run: SSID:"+wiFiDirectActivity.getSSID());
@@ -36,18 +34,19 @@ public class ParametersCollection implements Runnable {
             }catch (Exception e){
                 e.printStackTrace();
             }
-            Log.d(TAG, "run: 当前RSSI值:----------:" + wiFiDirectActivity.getRSSI(wiFiDirectActivity.getSSID()));
+//            Log.d(TAG, "run: 当前"+wiFiDirectActivity.getSSID()+"的RSSI值:----------:" + wiFiDirectActivity.getRSSI(wiFiDirectActivity.getSSID()));
             RSSI_queue.add(wiFiDirectActivity.getRSSI(wiFiDirectActivity.getSSID()));
 
 
             if (RSSI_queue.size()>=TIME){
-                Log.d(TAG, "run:"+TIME+"秒内 RSSI值----------:"+RSSI_queue.toString());
+               // Log.d(TAG, "run:"+TIME+"秒内 RSSI值----------:"+RSSI_queue.toString());
                 RSSI_queue.poll();
+
             }
 
-            Log.d(TAG, "run: 当前 throughtput值:--------:"+ComputeBandwidth.throughtput+"kbps");
-            if (ComputeBandwidth.throughtput_queue.size()>=ComputeBandwidth.TIME)
-            Log.d(TAG, "run: "+TIME+"秒内throughput值:--------"+ Arrays.toString(ComputeBandwidth.throughtput_queue.toArray()));
+//            Log.d(TAG, "run: 当前 throughtput值:--------:"+ComputeBandwidth.throughtput+"kbps");
+            if (ComputeBandwidth.throughtput_queue.size()>=ComputeBandwidth.TIME);
+//            Log.d(TAG, "run: "+TIME+"秒内throughput值:--------"+ Arrays.toString(ComputeBandwidth.throughtput_queue.toArray()));
 
 
 

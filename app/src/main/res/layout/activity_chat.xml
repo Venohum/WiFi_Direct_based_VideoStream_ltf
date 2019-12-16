@@ -66,6 +66,12 @@
                 android:layout_weight="1"
                 android:text="@string/Replay"
                 tools:ignore="ButtonStyle" />
+            <Button
+                android:id="@+id/Heart_Beat_test"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/Heart_Beat_test"
+                tools:ignore="ButtonStyle" />
 
         </LinearLayout>
     </LinearLayout>

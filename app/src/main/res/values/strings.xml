@@ -12,6 +12,8 @@
     <string name="RecordScreen">录屏</string>
     <string name="SendMessage">发送</string>
     <string name="Connect">connect</string>
+    <string name="Heart_Beat_test">心跳</string>
+
     <string name="Disconnect">disconnect</string>
     <string name="Chatbutton">Surface</string>
 </resources>

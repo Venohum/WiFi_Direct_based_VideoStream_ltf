@@ -1,6 +1,7 @@
 package com.example.dell.wi_fi_direct_based_videostream_ltf.Camera;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.PixelFormat;
@@ -16,6 +17,7 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaActionSound;
+import android.media.MediaFormat;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -32,9 +34,11 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Algorithmic.ComputeBandwidth;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Algorithmic.ParametersCollection;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Algorithmic.SwitchBitrate;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.AsyncEncoder;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.Synchronization.Decoder;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.Synchronization.Encoder;
@@ -44,6 +48,7 @@ import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.UDP.EchoServer;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct.DeviceDetailFragment;
 import com.googlecode.javacv.cpp.ARToolKitPlus;
+import com.googlecode.javacv.cpp.opencv_videostab;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -62,7 +67,6 @@ public class CameraActivity extends AppCompatActivity {
     private CaptureRequest.Builder mCaptureRequestBuilder;
     private SurfaceView surfaceView,surfaceView2;
     private HandlerThread mCameraThread;
-    private HandlerThread mCameraThread2;
     private Handler mCameraHandler,mCameraHandler2;
     private SurfaceHolder mSurfaceHolder,mSurfaceHolder2;
     private Size mPreviewSize;
@@ -74,7 +78,7 @@ public class CameraActivity extends AppCompatActivity {
     private Button pill;
     private int framerate = 24;//每秒帧率
     private int bitrate = 1900000;//编码比特率，
-    private final String MIME_TYPE = "video/avc";
+    private final String MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;
 //    private byte[] h264=new byte[width*height*3];
     private byte[][] data=new byte[3][];
     private byte[] buf={0,2,3};
@@ -85,7 +89,7 @@ public class CameraActivity extends AppCompatActivity {
     private ComputeBandwidth computeBandwidth_CameraActivity;
     private boolean running;
     private EchoServer server;
-    private int target_bitrate=2000;
+    private int target_bitrate=2000;//默认码率
     //public static File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/6.h264");
 
     public CameraActivity() throws IOException {
@@ -94,15 +98,15 @@ public class CameraActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
-        surfaceView = (SurfaceView) findViewById(R.id.sfvSurfaceView);
-        surfaceView2=(SurfaceView)findViewById(R.id.sfvSurfaceView2);
+        surfaceView =  findViewById(R.id.sfvSurfaceView);
+        surfaceView2= findViewById(R.id.sfvSurfaceView2);
         pill=(Button)findViewById(R.id.pipi);
         pill.setOnClickListener(new View.OnClickListener() {
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onClick(View v) {
 //                Log.d(TAG, "onClick: 是组主么"+DeviceDetailFragment.info.isGroupOwner);
-                if (DeviceDetailFragment.info.isGroupOwner)
+                if (!DeviceDetailFragment.info.isGroupOwner)
                try{
                     server=new EchoServer();
                     new Thread(server).start();
@@ -155,6 +159,7 @@ public class CameraActivity extends AppCompatActivity {
 
             running=true;
             new Thread(new Runnable() {
+                @RequiresApi(api = Build.VERSION_CODES.O)
                 @Override
                 public void run() {
 
@@ -167,6 +172,7 @@ public class CameraActivity extends AppCompatActivity {
                             e.printStackTrace();
                         }
                         float rangeability=ComputeBandwidth.AVG_function(ParametersCollection.RSSI_queue)-pre_data;
+
                         Log.d(TAG, "run: RSSI变化幅度："+rangeability/10);
 //                        Log.d(TAG, "run: RSSI均值-----------------是  ："+ComputeBandwidth.AVG_function(ParametersCollection.RSSI_queue));
 
@@ -184,9 +190,6 @@ public class CameraActivity extends AppCompatActivity {
                             SwithchingBitrate(2000,24);
                             target_bitrate=2000;
                         }
-
-
-
                     }
                 }
             }).start();
@@ -218,6 +221,8 @@ public class CameraActivity extends AppCompatActivity {
         @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
+
+
             setupCamera(holder.getSurfaceFrame().width(), holder.getSurfaceFrame().height());
 
             openCamera();
@@ -315,6 +320,7 @@ public class CameraActivity extends AppCompatActivity {
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
             mCameraDevice = camera;
+
             /**
              * 初始化编码器——同步方式
              */
@@ -390,12 +396,6 @@ public class CameraActivity extends AppCompatActivity {
                             @Override
                             public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request,  @NonNull TotalCaptureResult result) {
                                 super.onCaptureCompleted(session, request, result);
-//                                try {
-//                                    startEncode();
-//
-//                                } catch (IOException e) {
-//                                    e.printStackTrace();
-//                                }
 
                             }
                         }, mCameraHandler);
@@ -412,6 +412,8 @@ public class CameraActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
+
     private void closeSession(){
         if (mCameraCaptureSession != null) {
             mCameraCaptureSession.close();
@@ -464,7 +466,7 @@ public class CameraActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-
+        if (computeBandwidth_CameraActivity!=null)
         computeBandwidth_CameraActivity.setStatus(false);
         closeSession();
         closeCameraDevice(mCameraDevice);
@@ -476,8 +478,6 @@ public class CameraActivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.M)
     private void startdecode(String mimeType, Surface surface, int viewwidth, int viewheight, EchoServer echoServer,MulticastServer multicastServer){
         VideoDecoder videoDecoder=new VideoDecoder(mimeType,surface,viewwidth,viewheight);
-//        Log.d(TAG, "startdecode: sps"+Arrays.toString(encoder.mSps));
-//        Log.d(TAG, "startdecode: pps"+Arrays.toString(encoder.mPps));
         videoDecoder.setechoServer(echoServer,multicastServer);
         videoDecoder.startDecoder();
     }
@@ -502,10 +502,12 @@ public class CameraActivity extends AppCompatActivity {
         }
         Log.d(TAG, "initEncoder: 编码器初始化完成！");
     }
+    @TargetApi(Build.VERSION_CODES.O)
     @RequiresApi(api = Build.VERSION_CODES.M)
+
     private void initAsyncEncoder(String MIME_TYPE, int with, int hight){
         asyncEncoder=new AsyncEncoder(MIME_TYPE,with,hight);
-        asyncEncoder.setmMediaFormat(2000,24);//视频默认码率
+        asyncEncoder.setmMediaFormat(3900,24);//视频默认码率
         asyncEncoder.startEncoder();
 
     }
@@ -514,8 +516,8 @@ public class CameraActivity extends AppCompatActivity {
      * @param target_bitrate
      * @param fps
      */
-    private void SwithchingBitrate(int target_bitrate,int fps){
-
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private void SwithchingBitrate(int target_bitrate, int fps){//重置编码器，重新编码
 
         try {
             if (asyncEncoder!=null){
@@ -527,9 +529,26 @@ public class CameraActivity extends AppCompatActivity {
                 closeSession();
                 startPreView();
                 Log.d(TAG, "SwitchBitrate: 码率被切换为："+target_bitrate+"kbps");
+
+                SwitchBitrate switchBitrate=new SwitchBitrate();
+                switchBitrate.RSSI_p(ParametersCollection.RSSI_queue);
+                switchBitrate.Throughput_p(ComputeBandwidth.throughtput_queue,0);
+
             }
         }catch (Exception e){
             e.printStackTrace();
         }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 }

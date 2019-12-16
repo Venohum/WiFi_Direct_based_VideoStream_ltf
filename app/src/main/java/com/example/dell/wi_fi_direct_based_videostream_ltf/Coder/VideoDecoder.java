@@ -1,4 +1,5 @@
 package com.example.dell.wi_fi_direct_based_videostream_ltf.Coder;
+import android.graphics.SurfaceTexture;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
@@ -36,7 +37,8 @@ public class VideoDecoder {
     private HandlerThread mVideoDecoderHandlerThread = new HandlerThread("VideoDecoder");
     private EchoServer echoServer;
     private MulticastServer multicastServer;
-
+    private byte[]SPS={0, 0, 0, 1, 103, 77, 0, 40, -23, -128, -76, 4, 79, -53, 43, 6, 6, 6, 6, -48, -95, 41, -64};
+    private byte[]PPS={0, 0, 0, 1, 104, -18, 6, -30};
     private MediaCodec.Callback mCallback = new MediaCodec.Callback() {
         @Override
         public void onInputBufferAvailable(@NonNull MediaCodec mediaCodec, int id) {
@@ -49,7 +51,7 @@ public class VideoDecoder {
                 dataSources=echoServer.pollFramedata();
 //            dataSources=multicastServer.pollFramedata();
 //                if (dataSources!=null)
-//                Log.d(TAG, "onInputBufferAvailable: 解码器缓冲区可以用了！"+Arrays.toString(dataSources));
+//                Log.d(TAG, "onInputBufferAvailable: 解码器输入缓冲区可以用了！"+Arrays.toString(dataSources));
 
 //            }
             int length = 0;
@@ -59,7 +61,8 @@ public class VideoDecoder {
 //                number++;
 //                Log.d(TAG, "onInputBufferAvailable:接收到了 "+number);
             }
-            mediaCodec.queueInputBuffer(id,0, length,System.nanoTime()/1000,0);
+            mediaCodec.queueInputBuffer(id,0, length,0,0);
+            //mediaCodec.queueInputBuffer(id,0, length,System.nanoTime()/1000,0);
         }
 
         @Override
@@ -69,7 +72,7 @@ public class VideoDecoder {
             if(mMediaFormat == outputFormat && outputBuffer != null && bufferInfo.size > 0){
                 byte [] buffer = new byte[outputBuffer.remaining()];
                 outputBuffer.get(buffer);
-//                Log.d(TAG, "onOutputBufferAvailable: 解码器缓冲区可以用了！");
+                Log.d(TAG, "onOutputBufferAvailable: 解码器输出缓冲区可以用了！");
             }
             mMediaCodec.releaseOutputBuffer(id, true);
         }
@@ -114,6 +117,9 @@ public class VideoDecoder {
 //        mMediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
 //        mMediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE,16*32);
 //        mMediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
+        mMediaFormat.setInteger(MediaFormat.KEY_ROTATION,90);
+        mMediaFormat.setByteBuffer("csd-0",ByteBuffer.wrap(SPS));
+        mMediaFormat.setByteBuffer("csd-1",ByteBuffer.wrap(PPS));
         try {
 //            mMediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(sps));
 //            mMediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(pps));
@@ -133,6 +139,7 @@ public class VideoDecoder {
             mMediaCodec.setCallback(mCallback, mVideoDecoderHandler);
             mMediaCodec.configure(mMediaFormat, mSurface,null,0);
             mMediaCodec.start();
+            mMediaCodec.setVideoScalingMode(MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
             }catch (Exception e){
                 e.printStackTrace();
             }

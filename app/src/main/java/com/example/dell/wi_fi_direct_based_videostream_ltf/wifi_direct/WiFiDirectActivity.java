@@ -7,6 +7,7 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pGroup;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Build;
@@ -62,10 +63,8 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        Toast.makeText(WiFiDirectActivity.this,"这是咋了",Toast.LENGTH_SHORT).show();
         setContentView(R.layout.activity_wi_fi_direct);
-//        // add necessary intent values to be matched.
-//
+
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);//通知P2P功能的使用情况
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);//系统内部保存搜索到其他P2P设备信息的变化情况
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);//用于通知P2P的连接情况
@@ -87,14 +86,16 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
         });
 
         receiver = new WiFiDirectBroadcastReceiver(manager, channel, this);
+
+        /** register the BroadcastReceiver with the intent values to be matched */
+        registerReceiver(receiver, intentFilter);
     }
 
-    /** register the BroadcastReceiver with the intent values to be matched */
     @Override
     public void onResume() {
         super.onResume();
 
-        registerReceiver(receiver, intentFilter);
+
     }
 
     @Override
@@ -170,6 +171,7 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
                                 Toast.LENGTH_SHORT).show();
                     }
                 });
+
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -308,21 +310,18 @@ public class WiFiDirectActivity extends AppCompatActivity implements WifiP2pMana
         if(!("").equals(regrex)){
 
             WifiManager wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            assert wifiManager != null;
             wifiManager.startScan();
             List<ScanResult> scanResults = wifiManager.getScanResults();
             Pattern pattern = Pattern.compile(regrex);
-            //Log.d(WiFiDirectActivity.TAG,""+scanResults.size());
-
+            //Log.d(WiFiDirectActivity.TAG,"看看是不是空的，如果是0就是空"+scanResults.size());
             if(null != pattern){
                 for(ScanResult scanResult : scanResults){
-
                     Matcher matcher = pattern.matcher(scanResult.SSID);
                     if(matcher.matches()){
-
                /* Log.d(WiFiDirectActivity.TAG, scanResult.BSSID);
                 Log.d(WiFiDirectActivity.TAG, ""+scanResult.level);*/
                         rssi = scanResult.level;
-
                     }
                 }
             }

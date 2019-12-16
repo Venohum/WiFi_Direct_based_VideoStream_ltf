@@ -17,6 +17,7 @@ import com.example.dell.wi_fi_direct_based_videostream_ltf.Multicast.MulticastCl
 import com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct.DeviceDetailFragment;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class AsyncEncoder {
@@ -27,13 +28,13 @@ public class AsyncEncoder {
     private MediaCodec  mMediaCodec;
     public Surface mSurface;
     private MediaFormat mMediaFormat;
-    private long number=1000;
+    private long number=0;
     byte[] temp=null;
     private int      mViewWidth;
     private int      mViewHeight;
     private EchoClient echoClient=new EchoClient("192.168.49.125");
-    private EchoClient echoClient2=new EchoClient("192.168.49.1");
-    private EchoClient echoClient3=new EchoClient("192.168.49.28");
+    private EchoClient echoClient2=new EchoClient("192.168.49.93");
+    private EchoClient echoClient3=new EchoClient("192.168.49.52");
 //    private EchoClient echoClient4=new EchoClient("192.168.49.37");
 //    private EchoClient echoClient5=new EchoClient("192.168.49.52");
 //    private EchoClient echoClient6=new EchoClient("192.168.49.166");
@@ -72,14 +73,23 @@ public class AsyncEncoder {
         mMediaCodec.reset();
     }
 
-    public void setmMediaFormat(int bitrate,int fps){
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public void setmMediaFormat(int bitrate, int fps) {
 
-        mMediaFormat = MediaFormat.createVideoFormat("video/avc", mViewWidth, mViewHeight);
+        mMediaFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, mViewWidth, mViewHeight);
         mMediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);//视频格式
         mMediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate*1024);//码率1900000
         mMediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, fps);//帧率
         mMediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);//关键帧间隔
         mMediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR);
+        try {
+            mMediaFormat.setInteger(MediaFormat.KEY_PROFILE,MediaCodecInfo.CodecProfileLevel.AVCProfileMain);
+            mMediaFormat.setInteger(MediaFormat.KEY_LEVEL,MediaCodecInfo.CodecProfileLevel.AVCProfileMain);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+
         mMediaCodec.setCallback(new MediaCodec.Callback() {
             @Override
             public void onInputBufferAvailable(@NonNull MediaCodec mediaCodec, int id) {
@@ -110,14 +120,16 @@ public class AsyncEncoder {
                         try {
 //                        echoClient.sendStream_n(temp,temp.length);
 //                          echoClient2.sendStream_n(Util.rotateYUV240SP(temp,1440,1080),temp.length);
-                            if (!DeviceDetailFragment.info.isGroupOwner)
+                            if (isgroupowner){
                             echoClient2.sendStream_n(temp,temp.length);
-//                            echoClient3.sendStream_n(temp,temp.length);
+                            echoClient3.sendStream_n(temp,temp.length);
 //                        echoClient4.sendStream_n(temp,temp.length);
 //                        echoClient5.sendStream_n(temp,temp.length);
 //                        echoClient6.sendStream_n(temp,temp.length);
 //                        multicastClient.sendmessage(temp,temp.length);
-//                        Log.d(TAG, "发送的数据"+number);
+//                        Log.d(TAG, "onOutputBufferAvailable: "+ Arrays.toString(temp));
+                            }
+//                        Log.d(TAG, "发送的数据"+(++number));
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -151,13 +163,15 @@ public class AsyncEncoder {
             @Override
             public void onOutputFormatChanged(@NonNull MediaCodec mediaCodec, @NonNull MediaFormat mediaFormat) {
 
-
                 Log.d(TAG, "onOutputFormatChanged: "+mediaFormat.toString());
                 Log.d(TAG, "------> onOutputFormatChanged");
             }
         }, mVideoEncoderHandler);
         mMediaCodec.configure(mMediaFormat, null, null, CONFIGURE_FLAG_ENCODE);
         mSurface=mMediaCodec.createInputSurface();
+
+
+//        Log.d(TAG, "setmMediaFormat: 这是编码器返回的参数 "+mMediaCodec.getMetrics().toString());
     }
 
     /**
@@ -183,10 +197,10 @@ public class AsyncEncoder {
     @RequiresApi(api = Build.VERSION_CODES.M)
     public void startEncoder(){
 
-
         if(mMediaCodec != null){
 
             mMediaCodec.start();
+            mMediaCodec.setVideoScalingMode(MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
         }else{
             throw new IllegalArgumentException("startEncoder failed,is the MediaCodec has been init correct?");
         }
@@ -219,7 +233,6 @@ public class AsyncEncoder {
 
         }
     }
-
     /**
      * release all resource that used in Encoder
      */
@@ -230,4 +243,5 @@ public class AsyncEncoder {
             mMediaCodec.release();
         }
     }
+
 }

@@ -5,12 +5,14 @@ import android.util.Log;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
+import java.util.Timer;
 
 import static com.example.dell.wi_fi_direct_based_videostream_ltf.Camera.CameraActivity.TAG;
 
@@ -45,7 +47,7 @@ public class MulticastClient {
      *
      * @return get the ip address of itself
      */
-    private  String getIP(){
+    public static String getIP(){
 
         try {
             for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
@@ -55,7 +57,7 @@ public class MulticastClient {
                     InetAddress inetAddress = enumIpAddr.nextElement();
                     if (!inetAddress.isLoopbackAddress() && (inetAddress instanceof Inet4Address))
                     {
-                        return inetAddress.getHostAddress().toString();
+                        return inetAddress.getHostAddress();
                     }
                 }
             }

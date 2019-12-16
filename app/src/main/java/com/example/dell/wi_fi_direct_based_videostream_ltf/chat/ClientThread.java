@@ -118,6 +118,41 @@ private String []type;
             }
         }
     }
+
+    /**
+     *
+     * 若不采用弱引用，则可能会引起内存泄漏：
+     */
+
+    private Handler handler_test=new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            String message=null;
+            switch (msg.what){
+
+                case 345:
+                    message=msg.obj.toString();
+                    break;
+//                case 346:
+//                    message=msg.obj.toString();
+//                    break;
+                default:
+                    break;
+
+            }
+            try{
+                DataOutputStream stream=new DataOutputStream(socket.getOutputStream());
+                Log.d(TAG, "ClientWrite: 客户端写入message开始");
+                if (message!=null)
+                    stream.writeUTF(message);
+                stream.flush();
+                Log.d(TAG, "handleMessage:客户端写入message完毕！ ");}catch (IOException e){
+                e.printStackTrace();
+            }
+        }
+    };
+
     private class ClientWriteMessage implements Runnable{
         @Override
         public void run(){

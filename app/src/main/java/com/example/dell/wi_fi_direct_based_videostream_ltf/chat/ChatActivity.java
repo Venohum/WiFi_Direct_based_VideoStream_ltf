@@ -1,7 +1,9 @@
 package com.example.dell.wi_fi_direct_based_videostream_ltf.chat;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.bluetooth.BluetoothAdapter;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -26,6 +28,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.Parcel;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -43,19 +46,33 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Camera.CameraActivity;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Coder.Object2Array;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Multicast.MulticastClient;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Multicast.MulticastServer;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.Packet.HeartBeatPacket;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.R;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Service.ServerAsyncTask;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.Service.ClientAsynTask;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.UDP.HeartBeatClient;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.UDP.HeartBeatServer;
 import com.example.dell.wi_fi_direct_based_videostream_ltf.recorder.RecordService;
+import com.example.dell.wi_fi_direct_based_videostream_ltf.wifi_direct.DeviceDetailFragment;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.MulticastSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.nio.Buffer;
 
+import static com.example.dell.wi_fi_direct_based_videostream_ltf.R.id.Heart_Beat_test;
 import static com.example.dell.wi_fi_direct_based_videostream_ltf.R.id.btn_send;
 import static com.example.dell.wi_fi_direct_based_videostream_ltf.R.id.group_owner;
 
@@ -92,7 +109,8 @@ public class ChatActivity extends AppCompatActivity {
     private TextView textView;
     private String[] type;
     private Thread thread_client,thread_server;
-
+    private HeartBeatServer heartBeatServer;
+    private HeartBeatClient heartBeatClient;
     /*
     以下变量的定义是为了实现本地视频显示在SurfaceView中
      */
@@ -100,71 +118,58 @@ public class ChatActivity extends AppCompatActivity {
     private SurfaceView sv;
     private Boolean isplaying;
     private MediaPlayer mediaPlayer;
-    private EditText et_path;
     private int currentPostition = 0;
-    public static final int UPDATE_UI =1;
-
-//    handler=new Handler(){
-//
-//    };
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        projectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
         setContentView(R.layout.activity_chat);
-//        wifiP2pInfo=new WifiP2pInfo();
-//        if (wifiP2pInfo!=null){
-//        Log.d(TAG, "哈哈哈哈哈,P2p地址是kong "+wifiP2pInfo.toString() );}
-        //final SurfaceView surfaceView =(findViewById(R.id.surfaceView));
+
+        projectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
         verifyPermission(new String[]{Manifest.permission.CAMERA});
         Intent intent1=getIntent();
         isgroupowner=intent1.getBooleanExtra("ChatActivity",false);
         wifiP2pManager=(WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
         WifiManager wifiManager=(WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-         textView=(TextView) findViewById(R.id.chat_content);
+        textView=(TextView) findViewById(R.id.chat_content);
         editText=(EditText)findViewById(R.id.Sendtext);
 
-        final ServerAsyncTask serverAsyncTask=new ServerAsyncTask(textView);
-        final ClientAsynTask clientAsynTask=new ClientAsynTask("192.168.49.1");
-        /**
-         * 利用AsynTask实现socket连接，
-         *    if (isgroupowner){
-         *         serverAsyncTask.execute(50000);}
-         *        else {
-         *             clientAsynTask.execute("192.168.49.1");
-         *         }
-         */
+        heartBeatServer=new HeartBeatServer(isgroupowner);
+        new Thread(heartBeatServer).start(); //心跳包接收线程
+
 
         /**
          * 利用handler实现线程之间消息传递，socket连接，流传输等等
          */
-//        type=new String[2];
-//        if (isgroupowner&&serverThread==null){
-//            type[0]="group_owner";
-//        serverThread=new ServerThread(type,myHandler);
-//       thread_server= new Thread(serverThread);
-//               thread_server.start();
-//            Log.d(ChatActivity.TAG,"线程第一次被创建");
-//
-//        }
-//        /**
-//         *
-//         */
-//        if (!isgroupowner&&clientThread==null){
-//            //type[0]="group_client";
-//            type[0]="group_client";
-//        clientThread=new ClientThread(type,myHandler);
-//        thread_client=new Thread(clientThread);
-//        thread_client.start();
-//        }
+        /**
+         *
+         *         type=new String[2];
+         *         if (isgroupowner&&serverThread==null){
+         *             type[0]="group_owner";
+         *         serverThread=new ServerThread(type,myHandler);
+         *        thread_server= new Thread(serverThread);
+         *                thread_server.start();
+         *             Log.d(ChatActivity.TAG,"线程第一次被创建");
+         *
+         *         }
+         *
+         *
+         *
+         *         if (!isgroupowner&&clientThread==null){
+         *             //type[0]="group_client";
+         *             type[0]="group_client";
+         *         clientThread=new ClientThread(type,myHandler);
+         *         thread_client=new Thread(clientThread);
+         *         thread_client.start();
+         *         }
+         */
 
 /**
  * 测试使用SurfaceView播放视频
  *
  */
-        seekBar=(SeekBar)findViewById(R.id.seekBar);
+        seekBar=(SeekBar)findViewById(R.id.seekBar);//进度条
         sv=(SurfaceView)findViewById(R.id.surfaceView);
         //et_path=(EditText)findViewById(Sendmessage);
         play=(Button) findViewById(R.id.btn_play);
@@ -172,12 +177,12 @@ public class ChatActivity extends AppCompatActivity {
         stop=(Button)findViewById(R.id.btn_stop);
         replay=(Button)findViewById(R.id.btn_replay);
         btn_sedm=(Button)findViewById(R.id.btn_send);
-
+        Button heart_Beat_test = findViewById(R.id.Heart_Beat_test);
         play.setOnClickListener(click);
         pause.setOnClickListener(click);
         stop.setOnClickListener(click);
         replay.setOnClickListener(click);
-        //btn_sedm.setOnClickListener(click);
+        heart_Beat_test.setOnClickListener(click);
         sv.getHolder().addCallback(callback2);
         seekBar.setOnSeekBarChangeListener(change);
 /**
@@ -217,9 +222,10 @@ public class ChatActivity extends AppCompatActivity {
             public void onClick(View v) {
                 try{
                     if (recordService.isRunning()) {
-                        //recordService.stopRecord();
+                        recordService.stopRecord();
                         Log.d(TAG, "onClick: 点击了录制屏幕按钮！");
                         startBtn.setText(R.string.start_record);
+
                     } else {
                         Intent captureIntent = projectionManager.createScreenCaptureIntent();
                         /**
@@ -249,11 +255,13 @@ public class ChatActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this,new String[]{Manifest.permission_group.CAMERA},CAMERA_REQUEST_CODE);
         }
         Intent intent = new Intent(this, RecordService.class);
-        bindService(intent, connection, BIND_AUTO_CREATE);
+        bindService(intent, connection, BIND_AUTO_CREATE);//绑定服务
+
+
+
 }//OnCreate
 
     private void verifyPermission(String[] permissions) {
-
 
 
     }
@@ -284,7 +292,7 @@ public class ChatActivity extends AppCompatActivity {
         public void surfaceCreated(SurfaceHolder holder) {
             Log.i(TAG, "SurfaceHolder被创建！");
             if(currentPostition>0){
-                //创建SurfaceHolder的时候，如果存在上次播放的位置，则按照i上次波安防位置进行播放。
+                //创建SurfaceHolder的时候，如果存在上次播放的位置，则按照i上次播放位置进行播放。
                play(currentPostition);
                 currentPostition=0;
             }
@@ -371,19 +379,33 @@ public class ChatActivity extends AppCompatActivity {
                         break;
                     case R.id.btn_send:
                         //sendmessage();
+                    case R.id.Heart_Beat_test:
+                        heart_beat();
+                        break;
                     default:
                         break;
                 }
         }
     };
 
+    private void heart_beat(){
+
+        BluetoothAdapter myDevice = BluetoothAdapter.getDefaultAdapter();//通过蓝牙获取的设备名
+        String deviceName = myDevice.getName();
+        HeartBeatPacket heartBeatPacket=new HeartBeatPacket("HeartBeat",MulticastClient.getIP(),Build.MODEL,null,false);
+        heartBeatClient=new HeartBeatClient(heartBeatPacket,isgroupowner);
+        new Thread(heartBeatClient).start();
+
+    }
+
     /**
      * 采用静态内部类+弱引用的方式，处理利用因使用Handler引起的内存泄漏问题
      */
+
     static class MyHandler extends Handler {
         private final WeakReference<ChatActivity>mactivity;
         MyHandler( ChatActivity activity){
-            mactivity=new WeakReference<ChatActivity>(activity);
+            mactivity=new WeakReference<>(activity);
         }
         @Override
         public void handleMessage(Message msg){
@@ -399,6 +421,31 @@ public class ChatActivity extends AppCompatActivity {
             }
         }
     }
+
+    /**
+     * 采不采用静态内部类和弱引用的方式
+     * 这是在主线程中定义的Handler，因此当想要向主线程发送消息时，需要用此类的对象去发送(也就是需要将handler_main_thread对象传递到子线程)
+     *
+     */
+//    private Handler handler_main_thread=new Handler(){
+//
+//        @Override
+//        public void handleMessage(Message msg) {
+//            super.handleMessage(msg);
+//            switch (msg.what){
+//
+//                case 1:
+//                    textView.setText(msg.obj.toString());
+//                    Log.d(TAG, "handleMessage: 消息来自子线程");
+//                    break;
+//            }
+//
+//        }
+//    };
+
+
+
+
     protected void play(final int msec){
 //        String path ="/storage/emulated/0/DCIM/Camera/b.mp4";
 //        File file =new File(path);
@@ -424,7 +471,7 @@ public class ChatActivity extends AppCompatActivity {
                     //设置进度条最大进度为视频流的最大播放时长
                     seekBar.setMax(mediaPlayer.getDuration());
                     Log.d(TAG, "onPrepared: 最大播放时长"+mediaPlayer.getDuration());
-              thread=new Thread(){
+                thread=new Thread(){
                         @Override
                         public void run(){
                             try{
@@ -433,15 +480,15 @@ public class ChatActivity extends AppCompatActivity {
                                     int current=mediaPlayer.getCurrentPosition();
                                     seekBar.setProgress(current);
                                     sleep(500);
-                                    Log.d(TAG, "run: 这是子线程里得run");
+                                    Log.d(TAG, "run: 这是子线程里的run");
                                 }
                             }catch (Exception e){
                                 e.printStackTrace();
                             }
                         }
                     };
-              thread.start();
-                    play.setEnabled(false);
+                thread.start();
+                play.setEnabled(false);
                 }
             });
             mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
@@ -477,7 +524,7 @@ public class ChatActivity extends AppCompatActivity {
             Toast.makeText(this,"暂停播放",Toast.LENGTH_SHORT).show();
         }
     }
-    protected void stop(){
+    protected void stop(){//停止播放
         if (mediaPlayer!=null&&mediaPlayer.isPlaying()){
             mediaPlayer.stop();
             mediaPlayer.release();
@@ -497,37 +544,25 @@ public class ChatActivity extends AppCompatActivity {
         play(0);
     }
 
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+    }
     @Override
     protected void onStop() {
         super.onStop();
-
     }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unbindService(connection);
-        if (thread!=null){
-        thread.interrupt();
-        thread=null;}
-//
-//        if (!isgroupowner)
-//            if (thread_client.isAlive()){
-//                //thread_client.interrupt();
-//                thread_client.stop();
-//                Log.d(TAG, "onDestroy:"+thread_client.getName()+" 组员线程中断");
-//            }
-//        if (isgroupowner)
-//            if (thread_server.isAlive()){
-//                thread_server.interrupt();
-//                Log.d(TAG, "onDestroy:"+thread_server.getName()+" 组主线程中断");
-//            }
-//            else{
-//                Log.d(TAG, "onDestroy: 组主线程早已切断！");
-//            }
-
-        
-        
+        unbindService(connection);//解绑录屏服务
+        if (heartBeatServer!=null)
+        heartBeatServer.stop_Running();
+        if (heartBeatClient!=null)
+        heartBeatClient.stop_send_heartbeta_packet();
+        Log.d(TAG, "onDestroy: 调用停止发送心跳包线程方法");
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -675,5 +710,7 @@ public class ChatActivity extends AppCompatActivity {
         }
 
     }
+
+
 }
 
