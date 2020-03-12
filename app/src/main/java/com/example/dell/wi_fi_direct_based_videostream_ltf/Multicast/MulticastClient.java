@@ -21,7 +21,7 @@ public class MulticastClient {
     private MulticastSocket multicastSocket;
     private byte[]buf;
     private static final int port = 50003;
-
+    private  static final  int pp=88888;
     public MulticastClient(){
         try {
             multicastSocket=new MulticastSocket(port);
