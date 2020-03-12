@@ -41,6 +41,4 @@ public class HeartBeatPacket extends Packet implements Serializable {//心跳包
     public void setIP(String IP){
         this.IP=IP;
     }
-
-
 }
