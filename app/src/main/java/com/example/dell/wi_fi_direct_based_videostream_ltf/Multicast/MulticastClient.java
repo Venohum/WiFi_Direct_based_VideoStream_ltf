@@ -30,8 +30,7 @@ public class MulticastClient {
             multicastSocket.setNetworkInterface(NetworkInterface.getByInetAddress(InetAddress.getByName(getIP())));
             multicastSocket.joinGroup(new InetSocketAddress(InetAddress.getByName("224.0.0.1"),port),NetworkInterface.getByName(getIP()));
             Log.d(TAG, "MulticastClient: first_commit");
-
-
+            Log.d(TAG, "MulticastClient: second_test");
         }catch (Exception e){
             e.printStackTrace();
         }
